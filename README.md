@@ -24,21 +24,30 @@ Zamiast jednego okna z agentem masz kilka naraz. Ty rozmawiasz głównie z kiero
 - Kolega pracuje na własnym branchu i osobnym worktree, żeby nie nadpisywać plików innych. Przed scaleniem odpala testy.
 - Gdy kierownik potrzebuje więcej rąk, wywołuje `Tuned Team: dodaj kolegę` (adres `…://zbela.tuned-team/add`), a nowe okno pojawia się po prawej.
 
-```mermaid
-flowchart TB
-  T[Ty]
-  subgraph D[Dowodzenie]
-    direction LR
-    K["#0 kierownik"] <-->|sprawy zespołu; decyzje dla Ciebie idą przez kierownika| P["#1 prawa ręka"]
-  end
-  C["#N koledzy"]
-  T <-->|rozmowa| K
-  K -->|zadania| C
-  P -->|zadania dla wolnych| C
-  C -->|blokada, przekazanie zadań| P
-  C -->|pytania do Ciebie, w swoim oknie| T
-  P -.->|gdy kierownik nie odpowiada| T
+Tak płynie praca. Na górze koledzy (tu 8 dla przykładu, zwykle wystarcza 2–6), pod nimi kierownik i prawa ręka, na dole Ty:
+
 ```
+┌───────┐ ┌───────┐ ┌───────┐ ┌───────┐
+│   #2  │ │   #3  │ │   #4  │ │   #5  │
+└───────┘ └───────┘ └───────┘ └───────┘
+┌───────┐ ┌───────┐ ┌───────┐ ┌───────┐
+│   #6  │ │   #7  │ │   #8  │ │   #9  │
+└───────┘ └───────┘ └───────┘ └───────┘
+         ▲ zadania            ▲ zadania
+┌────────────────┐   ┌────────────────┐
+│  #0 kierownik  │   │ #1 prawa ręka  │
+└────────────────┘   └────────────────┘
+         ▲                    ▲
+         │ rozmowa            ┆ gdy kierownik nie odpowiada
+         └────────┐    ┌──────┘
+               ┌──┴────┴──┐
+               │    Ty    │
+               └──────────┘
+```
+
+- Rozmawiasz z kierownikiem. Prawa ręka stoi obok niego i zastępuje go, gdy kierownik nie odpowiada (linia przerywana).
+- Kierownik i prawa ręka dają zadania kolegom.
+- Koledzy pytają Cię wprost w swoim oknie, bez pośredników.
 
 **Po co dwie osoby na górze.** Prawa ręka jest zastępcą kierownika. Gdy kierownik padnie (okno się zamknie, kontekst się zapełni, przestanie odpowiadać), prawa ręka przejmuje rozmowę z Tobą i może pisać do Ciebie wprost. Normalnie rozmawiasz z kierownikiem, a prawa ręka prowadzi sprawy zespołu w tle.
 
