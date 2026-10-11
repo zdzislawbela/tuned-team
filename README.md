@@ -51,6 +51,16 @@ Tak płynie praca. Na górze koledzy (tu 8 dla przykładu, zwykle wystarcza 2–
 
 **Po co dwie osoby na górze.** Prawa ręka jest zastępcą kierownika. Gdy kierownik padnie (okno się zamknie, kontekst się zapełni, przestanie odpowiadać), prawa ręka przejmuje rozmowę z Tobą i może pisać do Ciebie wprost. Normalnie rozmawiasz z kierownikiem, a prawa ręka prowadzi sprawy zespołu w tle.
 
+### Tuned Team a agency-agents: po co oba
+
+[agency-agents](https://github.com/msitarzewski/agency-agents) to zestaw ponad 230 gotowych opisów specjalistów (frontend, bezpieczeństwo, testy, marketing…). To wiedza: kim jest taki agent i jak pracuje. Tuned Team to organizacja pracy: kto rozdziela zadania, kto zastępuje kierownika, ile okien działa naraz.
+
+- Tuned Team bez agency-agents: koledzy są ogólnymi agentami, bez specjalizacji.
+- Agency-agents bez Tuned Team: wołasz specjalistów pojedynczo, w jednej rozmowie, bez rozdzielania pracy.
+- Razem: kierownik daje koledze zadanie, a kolega woła specjalistę jako subagenta. Subagent pracuje we własnym, czystym kontekście i oddaje tylko podsumowanie, więc okno kolegi się nie zapełnia.
+
+Instalacja specjalistów: według instrukcji agency-agents, np. `./scripts/install.sh --tool claude-code`, co kopiuje pliki do `~/.claude/agents/`. Nie sprawdziliśmy jeszcze tego połączenia w oknie Tuned Team. Spodziewamy się, że działa, bo to zwykłe subagenty Claude Code, ale to założenie.
+
 ### Co jest w wersji 0.1.0
 
 - Układ okien, kolory kart, role, dokładanie kolegów i podpisywanie kart numerami.
