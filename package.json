@@ -1,0 +1,35 @@
+{
+  "name": "tuned-team",
+  "displayName": "Tuned Team",
+  "description": "Zespół agentów Claude Code w jednym oknie: kierownik, prawa ręka i koledzy, każdy z własną rolą",
+  "version": "0.1.0",
+  "publisher": "zbela",
+  "license": "UNLICENSED",
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com/zdzislawbela/tuned-team.git"
+  },
+  "engines": {
+    "vscode": "^1.90.0"
+  },
+  "main": "./extension.js",
+  "activationEvents": [
+    "onUri"
+  ],
+  "contributes": {
+    "commands": [
+      {
+        "command": "tunedTeam.start",
+        "title": "Tuned Team: start"
+      },
+      {
+        "command": "tunedTeam.add",
+        "title": "Tuned Team: dodaj kolegę"
+      },
+      {
+        "command": "tunedTeam.label",
+        "title": "Tuned Team: podpisz karty numerami"
+      }
+    ]
+  }
+}
