@@ -6,8 +6,6 @@ A VS Code extension that opens a team of Claude Code agents in one window. Each 
 - **#1 deputy** watches team state and housekeeping,
 - **#2, #3… colleagues** do the tasks, each on its own branch.
 
-> Naming: window names and role files keep their original Polish ids: `0-kierownik` (manager), `1-prawa-reka` (deputy), `N-kolega` (colleague). Terminal tabs show the English names.
-
 ## How it works
 
 Instead of one window with one agent, you get several at once. You mostly talk to the manager, who hands out the work.
@@ -20,9 +18,9 @@ Instead of one window with one agent, you get several at once. You mostly talk t
 └──────────────┴──────────────┴──────────────┘
 ```
 
-- Each cell is a separate terminal running `claude`, started with a window name (`0-kierownik`, `1-prawa-reka`, `3-kolega`) and a role from a Markdown file. Agents know each other by these names and write to each other with `SendMessage`.
+- Each cell is a separate terminal running `claude`, started with a window name (`0-manager`, `1-deputy`, `3-colleague`) and a role from a Markdown file. Agents know each other by these names and write to each other with `SendMessage`.
 - Each window has its own background colour, so you see at a glance which one you are in. The palette has 15 colours (`colors.json`); beyond that, colours are computed.
-- The manager gets "start" on launch and asks you what we are doing. It gives tasks to free colleagues, briefly, pointing to the rules in `kolega.md`.
+- The manager gets "start" on launch and asks you what we are doing. It gives tasks to free colleagues, briefly, pointing to the rules in `colleague.md`.
 - A colleague works on its own branch and a separate worktree, so it does not overwrite other people's files. It runs the tests before merging.
 - When the manager needs more hands, it calls `Tuned Team: add colleague` (address `…://zbela.tuned-team/add`), and a new window appears on the right.
 
@@ -102,7 +100,7 @@ The extension starts nothing in the background on its own. If you want the team 
 
 Claude Code has the `/loop` command and a recurring-task tool for this. They usually last only as long as the session: after the window is closed or after `/clear` they are gone and you have to ask again (check the Claude Code docs for how it works in your version).
 
-To avoid asking every time, add it to your own manager role in `~/.tuned-team/roles/kierownik.md`, under "On start", e.g. "set up a recurring task every hour: …". The manager will do it at every team start. The built-in manager role sets no recurring tasks.
+To avoid asking every time, add it to your own manager role in `~/.tuned-team/roles/manager.md`, under "On start", e.g. "set up a recurring task every hour: …". The manager will do it at every team start. The built-in manager role sets no recurring tasks.
 
 ## Requirements
 
@@ -175,14 +173,14 @@ tuned-team() { open "vscode://zbela.tuned-team/team?n=${1:-2}"; }
 
 ## Custom roles
 
-Roles are plain Markdown files: `kierownik.md` (manager), `prawa-reka.md` (deputy), `kolega.md` (colleague). The extension takes them from `~/.tuned-team/roles/` and uses the built-in ones from `defaults/roles/` only when they are not there.
+Roles are plain Markdown files: `manager.md`, `deputy.md`, `colleague.md`. The extension takes them from `~/.tuned-team/roles/` and uses the built-in ones from `defaults/roles/` only when they are not there.
 
 ```sh
 mkdir -p ~/.tuned-team/roles
 cp defaults/roles/*.md ~/.tuned-team/roles/
 ```
 
-Change the files there and open the team again. In a role text you can use two placeholders: `{{ROLES}}` (the roles folder, e.g. for "Rules: {{ROLES}}/kolega.md") and `{{ADD_URL}}` (the address the manager uses to add a colleague).
+Change the files there and open the team again. In a role text you can use two placeholders: `{{ROLES}}` (the roles folder, e.g. for "Rules: {{ROLES}}/colleague.md") and `{{ADD_URL}}` (the address the manager uses to add a colleague).
 
 ## Updating and uninstalling
 

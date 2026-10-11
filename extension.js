@@ -1,8 +1,7 @@
 // Tuned Team: a team of Claude Code agents in one editor window.
-// 0-kierownik (manager), 1-prawa-reka (deputy) and N colleagues (kolega), each in its
+// 0-manager, 1-deputy and N colleagues, each in its
 // own editor group, with a role from a .md file (--append-system-prompt). Roles:
 // ~/.tuned-team/roles/<role>.md (your own) or defaults/roles/<role>.md from this extension.
-// Window and role-file names stay in Polish; the English names are only shown in tabs.
 const vscode = require("vscode");
 const path = require("path");
 const fs = require("fs");
@@ -10,8 +9,6 @@ const os = require("os");
 
 const EXT_ID = "zbela.tuned-team";
 const ROWS = 2;
-// English names shown in terminal tabs; the role ids (and window names) stay Polish.
-const DISPLAY = { kierownik: "manager", "prawa-reka": "deputy", kolega: "colleague" };
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const quote = (s) => `'${String(s).replace(/'/g, "'\\''")}'`;
 
@@ -58,14 +55,14 @@ const cwdOf = () => vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
 // perl replaces {{ROLES}} and {{ADD_URL}} in the role file (via environment
 // variables, so paths with spaces and apostrophes are safe).
 function member(nr, role, viewColumn, cwd, opts = session) {
-  const name = nr === 0 ? "0-kierownik" : nr === 1 ? "1-prawa-reka" : `${nr}-kolega`;
-  const label = `#${nr} ${DISPLAY[role] || role}`;
+  const name = nr === 0 ? "0-manager" : nr === 1 ? "1-deputy" : `${nr}-colleague`;
+  const label = `#${nr} ${role}`;
   const t = vscode.window.createTerminal({ name: `${dotOf(nr)} ${label}`.trim(), cwd, location: { viewColumn, preserveFocus: true } });
   // Manager and deputy always run on Opus; the wizard's model applies to colleagues.
   const chosen = nr <= 1 ? "opus" : opts.model;
   const model = chosen ? ` --model ${quote(chosen)}` : "";
   const start = nr === 0 ? ` ${quote(startMessage(opts))}` : "";
-  const roles = path.dirname(roleFile("kolega"));
+  const roles = path.dirname(roleFile("colleague"));
   const addUrl = `${vscode.env.uriScheme}://${EXT_ID}/add`;
   const prompt =
     `"$(TT_ROLES=${quote(roles)} TT_ADD=${quote(addUrl)} ` +
@@ -111,7 +108,7 @@ async function team(n, opts = {}) {
   });
   // Manager last: its "READY" banner appears once the rest is up.
   for (const nr of [...Array.from({ length: total - 1 }, (_, i) => i + 1), 0]) {
-    member(nr, nr === 0 ? "kierownik" : nr === 1 ? "prawa-reka" : "kolega", nr + 1, cwd);
+    member(nr, nr === 0 ? "manager" : nr === 1 ? "deputy" : "colleague", nr + 1, cwd);
     await sleep(200);
   }
 }
@@ -177,7 +174,7 @@ async function start() {
 async function add() {
   if (!supported()) return;
   const nr = Math.max(1, ...taken()) + 1;
-  member(nr, "kolega", vscode.ViewColumn.Beside, cwdOf());
+  member(nr, "colleague", vscode.ViewColumn.Beside, cwdOf());
 }
 
 // Label the open Claude tabs "#N label" and tint their background: the terminal's
@@ -215,7 +212,7 @@ async function label() {
       try {
         dot = JSON.parse(fs.readFileSync(path.join(extensionPath, "colors.json"), "utf8"))[nr]?.[0] || "";
       } catch {}
-      await vscode.commands.executeCommand("workbench.action.terminal.renameWithArg", { name: `${dot} #${nr} ${DISPLAY[m[2]] || m[2].replace(/-/g, " ")}`.trim() });
+      await vscode.commands.executeCommand("workbench.action.terminal.renameWithArg", { name: `${dot} #${nr} ${m[2].replace(/-/g, " ")}`.trim() });
       await sleep(100);
     }
   }
