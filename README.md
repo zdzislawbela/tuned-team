@@ -114,6 +114,15 @@ Otwórz folder projektu, potem Cmd+Shift+P:
 
 Kierownik startuje sam z komunikatem „start” i pyta Ciebie, co robimy.
 
+### Ile okien otwierać
+
+Domyślnie polecenie „Tuned Team: start” podpowiada **2 kolegów**. Razem z kierownikiem i prawą ręką to **4 okna**. Skrót w terminalu bez liczby też otwiera 2 kolegów. Możesz wpisać od 1 do 20.
+
+- **Zacznij od 2 i dokładaj w miarę potrzeby** poleceniem „Tuned Team: dodaj kolegę”. Nowe okno pojawia się po prawej.
+- **Tylu kolegów, ile masz niezależnych zadań naraz**, czyli takich, które dotykają innych plików i innych branchy. Kolega bez zadania czeka i nic nie robi, a kierownik i prawa ręka muszą o nim pamiętać.
+- **Dobre zadanie dla kolegi** da się opisać w 2–4 zdaniach (co i po co) i skończyć bez ciągłych pytań do Ciebie. Zadania, które zmieniają te same pliki, daj jednemu koledze, bo dwóch zacznie się nadpisywać.
+- **Każde pracujące okno zużywa limit Twojego konta Claude.** Im więcej okien działa naraz, tym szybciej kończy się limit tygodniowy. Autor trzyma się najwyżej 8 okien (kierownik, prawa ręka i 6 kolegów) i zmierzył, że przy 15 oknach pracujących naraz limit schodził o ok. 1% na 10 minut. To pomiar z jednego konta i jednego planu, u Ciebie może być inaczej.
+
 ### Skrót w terminalu (opcjonalnie)
 
 Dodaj do `~/.zshrc`:

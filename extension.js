@@ -155,7 +155,7 @@ exports.activate = (context) => {
       handleUri: (uri) => {
         if (uri.path === "/add") return add();
         if (uri.path === "/label") return label();
-        return team(Math.max(1, Math.min(20, Number(new URLSearchParams(uri.query).get("n")) || 4)));
+        return team(Math.max(1, Math.min(20, Number(new URLSearchParams(uri.query).get("n")) || 2)));
       },
     }),
   );
