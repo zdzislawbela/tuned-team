@@ -7,7 +7,7 @@ const path = require("path");
 const fs = require("fs");
 const os = require("os");
 
-const EXT_ID = "zbela.tuned-team";
+const EXT_ID = "tuned.tuned-team";
 const ROWS = 2;
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const quote = (s) => `'${String(s).replace(/'/g, "'\\''")}'`;
@@ -249,8 +249,8 @@ exports.activate = (context) => {
     vscode.commands.registerCommand("tunedTeam.add", add),
     vscode.commands.registerCommand("tunedTeam.label", label),
     // shell shortcut (the scheme depends on the editor: vscode://, cursor://, windsurf://):
-    //   open "vscode://zbela.tuned-team/team?n=4"
-    //   open "vscode://zbela.tuned-team/add"
+    //   open "vscode://tuned.tuned-team/team?n=4"
+    //   open "vscode://tuned.tuned-team/add"
     vscode.window.registerUriHandler({
       handleUri: (uri) => {
         if (uri.path === "/add") return add();

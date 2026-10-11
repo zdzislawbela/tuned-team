@@ -22,7 +22,7 @@ Instead of one window with one agent, you get several at once. You mostly talk t
 - Each window has its own background colour, so you see at a glance which one you are in. The palette has 15 colours (`colors.json`); beyond that, colours are computed.
 - The manager gets "start" on launch and asks you what we are doing. It gives tasks to free colleagues, briefly, pointing to the rules in `colleague.md`.
 - A colleague works on its own branch and a separate worktree, so it does not overwrite other people's files. It runs the tests before merging.
-- When the manager needs more hands, it calls `Tuned Team: add colleague` (address `…://zbela.tuned-team/add`), and a new window appears on the right.
+- When the manager needs more hands, it calls `Tuned Team: add colleague` (address `…://tuned.tuned-team/add`), and a new window appears on the right.
 
 This is how the work flows. Tasks go down, reports come back up:
 
@@ -172,7 +172,7 @@ These are suggestions, not rules. You can type your own number (1 to 20) in the 
 Add to `~/.zshrc`:
 
 ```sh
-tuned-team() { open "vscode://zbela.tuned-team/team?n=${1:-2}"; }
+tuned-team() { open "vscode://tuned.tuned-team/team?n=${1:-2}"; }
 ```
 
 `tuned-team 4` opens the manager, the deputy and four colleagues. In Cursor replace `vscode://` with `cursor://`, in Windsurf with `windsurf://`. On Linux use `xdg-open` instead of `open`.
