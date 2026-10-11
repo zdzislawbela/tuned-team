@@ -49,6 +49,35 @@ Rzeczy, które działają u autora, ale nie zostały jeszcze przeniesione do teg
 - **Meldunki bez wiadomości.** `tuned-meldunek start "~15:00" "co robię"`, `eta`, `gotowe "commit abc123"` zapisują stan do pliku, więc nie zużywają tokenów.
 - **Tabela zespołu** (`tuned-agenci`): kto czeka na Ciebie, kto pracuje, kto jest wolny, ile ma kontekstu i jaką ETA.
 
+### Limit kontekstu: co to znaczy
+
+Agent „pamięta” rozmowę w oknie o skończonej wielkości, które nazywa się kontekstem. Pasek stanu pokazuje, ile z niego jest zajęte (`ctx 31%`). Im bliżej limitu, tym gorzej agent pracuje i tym drożej, więc po jakimś czasie okno trzeba wyczyścić (`/clear`) i zacząć od zera. Zespół robi to w kolejności, żeby nic się nie zgubiło. Progi to ustawienia autora, nie zasada Claude Code.
+
+Tak wygląda pasek w kolejnych stanach (kolorów na GitHubie nie widać, w edytorze procent jest czerwony od 30%):
+
+```
+do 29%    repo (main) | Opus | ctx 22%
+od 30%    repo (main) | Opus | ctx 31% · limit kontekstu     agent nie bierze nowych zadań, kończy bieżące
+od 35%    repo (main) | Opus | ctx 36% · limit kontekstu     agent przekazuje zadania koledze z czystym oknem
+gotowe    repo (main) | Opus | ctx 36%
+          █▀▄ ▄▀▄   █   █▀▀ █   █▀▀ ▄▀▄ █▀▄ ▀ ▄▀▄
+          █ █ █▀█ ▄ █   █   █   █▀  █▀█ █▀▄   █▀█
+          ▀▀  ▀ ▀ ▀▀    ▀▀▀ ▀▀▀ ▀▀▀ ▀ ▀ ▀ ▀   ▀ ▀
+          ^ kolega zgłosił tuned-daj-clear: wielki napis DAJ CLEAR'A, czyli wpisz /clear
+```
+
+To jest podgląd planowanego wyglądu z 0.2.0, nie zrzut z działającej wtyczki.
+
+### Zadania cykliczne (cron)
+
+Wtyczka niczego nie uruchamia sama w tle. Jeśli chcesz, żeby zespół robił coś co jakiś czas (np. co godzinę sprawdzał nowe commity i robił release), poproś o to kierownika w jego oknie, na przykład:
+
+> Ustaw zadanie cykliczne co godzinę: napisz do prawej ręki „sprawdź nowe commity na main i zrób release, jeśli są”.
+
+Claude Code ma na to polecenie `/loop` i narzędzie do zadań cyklicznych. Zwykle działają tylko tak długo, jak sesja: po zamknięciu okna albo `/clear` ich nie ma i trzeba poprosić ponownie (sprawdź w dokumentacji Claude Code, jak jest w Twojej wersji).
+
+Żeby nie prosić za każdym razem, dopisz to do własnej roli kierownika w `~/.tuned-team/roles/kierownik.md`, w punkcie „Na start”, np. „ustaw zadanie cykliczne co godzinę: …”. Kierownik wykona to przy każdym starcie zespołu. Wbudowana rola kierownika nie ustawia żadnych zadań cyklicznych.
+
 ## Wymagania
 
 - macOS albo Linux (w Windows tylko przez WSL).
