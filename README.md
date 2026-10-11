@@ -37,7 +37,10 @@ flowchart TB
   P -->|zadania dla wolnych| C
   C -->|blokada, przekazanie zadań| P
   C -->|pytania do Ciebie, w swoim oknie| T
+  P -.->|gdy kierownik nie odpowiada| T
 ```
+
+**Po co dwie osoby na górze.** Prawa ręka jest zastępcą kierownika. Gdy kierownik padnie (okno się zamknie, kontekst się zapełni, przestanie odpowiadać), prawa ręka przejmuje rozmowę z Tobą i może pisać do Ciebie wprost. Normalnie rozmawiasz z kierownikiem, a prawa ręka prowadzi sprawy zespołu w tle.
 
 ### Co jest w wersji 0.1.0
 
