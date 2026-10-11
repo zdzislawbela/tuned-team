@@ -2,7 +2,7 @@
   "name": "tuned-team",
   "displayName": "Tuned Team",
   "description": "Zespół agentów Claude Code w jednym oknie: kierownik, prawa ręka i koledzy, każdy z własną rolą",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "publisher": "zbela",
   "license": "UNLICENSED",
   "repository": {

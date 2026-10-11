@@ -37,6 +37,18 @@ function tintHex(nr) {
 }
 const tintSeq = (nr) => `\\033]11;${tintHex(nr)}\\007`;
 
+const dotOf = (nr) => {
+  try {
+    return JSON.parse(fs.readFileSync(path.join(extensionPath, "colors.json"), "utf8"))[nr]?.[0] || "";
+  } catch {
+    return "";
+  }
+};
+
+// Szary baner w oknie kierownika, drukowany tuż przed startem claude.
+const BANNER = "TUNED TEAM · GOTOWE";
+const bannerSeq = `\\033[48;5;240m\\033[38;5;255m\\033[1m  ${BANNER}  \\033[0m\\n`;
+
 const cwdOf = () => vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
 
 // One member: a terminal named like the session, claude with its role.
@@ -44,15 +56,19 @@ const cwdOf = () => vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
 // środowiskowe, więc ścieżki ze spacjami i apostrofami są bezpieczne).
 function member(nr, role, viewColumn, cwd, opts = session) {
   const name = nr === 0 ? "0-kierownik" : nr === 1 ? "1-prawa-reka" : `${nr}-kolega`;
-  const t = vscode.window.createTerminal({ name: `#${nr} ${role}`, cwd, location: { viewColumn, preserveFocus: true } });
-  const model = opts.model ? ` --model ${quote(opts.model)}` : "";
+  const label = `#${nr} ${role}`;
+  const t = vscode.window.createTerminal({ name: `${dotOf(nr)} ${label}`.trim(), cwd, location: { viewColumn, preserveFocus: true } });
+  // Kierownik i prawa ręka zawsze na Opusie, model z kreatora dotyczy kolegów.
+  const chosen = nr <= 1 ? "opus" : opts.model;
+  const model = chosen ? ` --model ${quote(chosen)}` : "";
   const start = nr === 0 ? ` ${quote(startMessage(opts))}` : "";
   const roles = path.dirname(roleFile("kolega"));
   const addUrl = `${vscode.env.uriScheme}://${EXT_ID}/add`;
   const prompt =
     `"$(TT_ROLES=${quote(roles)} TT_ADD=${quote(addUrl)} ` +
     `perl -pe 's/\\{\\{ROLES\\}\\}/$ENV{TT_ROLES}/g; s/\\{\\{ADD_URL\\}\\}/$ENV{TT_ADD}/g' ${quote(roleFile(role))})"`;
-  t.sendText(`printf '${tintSeq(nr)}'; claude -n ${name}${model} --append-system-prompt ${prompt}${start}`);
+  const banner = nr === 0 ? `printf '${bannerSeq}'; ` : "";
+  t.sendText(`printf '${tintSeq(nr)}'; ${banner}claude -n ${name}${model} --append-system-prompt ${prompt}${start}`);
   return t;
 }
 
@@ -69,7 +85,7 @@ function startMessage(opts) {
 
 // Numbers already open in this window (terminals are named "#N role").
 function taken() {
-  return vscode.window.terminals.map((t) => /^#(\d+) /.exec(t.name)).filter(Boolean).map((m) => Number(m[1]));
+  return vscode.window.terminals.map((t) => /#(\d+) /.exec(t.name)).filter(Boolean).map((m) => Number(m[1]));
 }
 
 function supported() {
@@ -90,7 +106,8 @@ async function team(n, opts = {}) {
     orientation: 1,
     groups: Array.from({ length: ROWS }, () => ({ groups: Array.from({ length: cols }, () => ({})) })),
   });
-  for (let nr = 0; nr < total; nr++) {
+  // Kierownik na końcu: jego baner "GOTOWE" pojawia się, gdy reszta już stoi.
+  for (const nr of [...Array.from({ length: total - 1 }, (_, i) => i + 1), 0]) {
     member(nr, nr === 0 ? "kierownik" : nr === 1 ? "prawa-reka" : "kolega", nr + 1, cwd);
     await sleep(200);
   }
@@ -215,7 +232,9 @@ exports.activate = (context) => {
       handleUri: (uri) => {
         if (uri.path === "/add") return add();
         if (uri.path === "/label") return label();
-        return team(Math.max(1, Math.min(20, Number(new URLSearchParams(uri.query).get("n")) || 2)));
+        const q = new URLSearchParams(uri.query);
+        const model = ["opus", "sonnet"].includes(q.get("model")) ? q.get("model") : "";
+        return team(Math.max(1, Math.min(20, Number(q.get("n")) || 2)), { model });
       },
     }),
   );
