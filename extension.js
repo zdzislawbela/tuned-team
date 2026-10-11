@@ -42,17 +42,29 @@ const cwdOf = () => vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
 // One member: a terminal named like the session, claude with its role.
 // Miejsca {{ROLES}} i {{ADD_URL}} w pliku roli podmienia perl (zmienne
 // środowiskowe, więc ścieżki ze spacjami i apostrofami są bezpieczne).
-function member(nr, role, viewColumn, cwd) {
+function member(nr, role, viewColumn, cwd, opts = session) {
   const name = nr === 0 ? "0-kierownik" : nr === 1 ? "1-prawa-reka" : `${nr}-kolega`;
   const t = vscode.window.createTerminal({ name: `#${nr} ${role}`, cwd, location: { viewColumn, preserveFocus: true } });
-  const start = nr === 0 ? ' "start"' : "";
+  const model = opts.model ? ` --model ${quote(opts.model)}` : "";
+  const start = nr === 0 ? ` ${quote(startMessage(opts))}` : "";
   const roles = path.dirname(roleFile("kolega"));
   const addUrl = `${vscode.env.uriScheme}://${EXT_ID}/add`;
   const prompt =
     `"$(TT_ROLES=${quote(roles)} TT_ADD=${quote(addUrl)} ` +
     `perl -pe 's/\\{\\{ROLES\\}\\}/$ENV{TT_ROLES}/g; s/\\{\\{ADD_URL\\}\\}/$ENV{TT_ADD}/g' ${quote(roleFile(role))})"`;
-  t.sendText(`printf '${tintSeq(nr)}'; claude -n ${name} --append-system-prompt ${prompt}${start}`);
+  t.sendText(`printf '${tintSeq(nr)}'; claude -n ${name}${model} --append-system-prompt ${prompt}${start}`);
   return t;
+}
+
+// Ustawienia z kreatora; używa ich też "dodaj kolegę" w tym samym oknie edytora.
+let session = {};
+
+// Pierwsza wiadomość kierownika: "start" plus to, co powiedziałeś w kreatorze.
+function startMessage(opts) {
+  let msg = "start";
+  if (opts.sizeLabel) msg += `. Rozmiar pracy: ${opts.sizeLabel}. Kolegów: ${opts.n}.`;
+  if (opts.cron) msg += ` Od razu ustaw zadanie cykliczne: ${opts.cron}`;
+  return msg;
 }
 
 // Numbers already open in this window (terminals are named "#N role").
@@ -68,8 +80,9 @@ function supported() {
   return true;
 }
 
-async function team(n) {
+async function team(n, opts = {}) {
   if (!supported()) return;
+  session = { ...opts, n };
   const cwd = cwdOf();
   const total = n + 2;
   const cols = Math.ceil(total / ROWS);
@@ -83,14 +96,61 @@ async function team(n) {
   }
 }
 
-async function start() {
+const pick = async (title, placeHolder, items) => {
+  const chosen = await vscode.window.showQuickPick(items, { title, placeHolder, ignoreFocusOut: true });
+  return chosen; // undefined = Esc, cały kreator się kończy
+};
+
+async function askCount() {
   const answer = await vscode.window.showInputBox({
-    title: "Tuned Team",
+    title: "Tuned Team: ilu kolegów?",
     prompt: "Ilu kolegów oprócz kierownika i prawej ręki? (1–20)",
     value: "2",
+    ignoreFocusOut: true,
     validateInput: (v) => (/^\d+$/.test(v) && v >= 1 && v <= 20 ? null : "Podaj liczbę od 1 do 20"),
   });
-  if (answer) return team(Number(answer));
+  return answer ? Number(answer) : undefined;
+}
+
+// Kreator: model, rozmiar pracy (z podpowiedzią liczby kolegów), zadanie cykliczne.
+async function start() {
+  const model = await pick("Tuned Team (1/3): jaki model?", "Model dla wszystkich okien zespołu", [
+    { label: "Opus", description: "polecamy: najlepsza jakość", value: "opus" },
+    { label: "Sonnet", description: "szybszy, zużywa mniej limitu", value: "sonnet" },
+    { label: "Domyślny", description: "nie ustawiaj, zostaje jak w Claude Code", value: "" },
+  ]);
+  if (!model) return;
+
+  const size = await pick("Tuned Team (2/3): jak duże zadanie?", "Od tego zależy, ilu kolegów polecamy", [
+    { label: "Jedna funkcja albo poprawka", description: "polecamy 2 kolegów", value: 2 },
+    { label: "Kilka zadań, pół dnia", description: "polecamy 4 kolegów", value: 4 },
+    { label: "Cały dzień kodowania", description: "polecamy 6 kolegów (8 okien, limit schodzi szybciej)", value: 6 },
+    { label: "Inna liczba…", description: "wpiszesz sam", value: 0 },
+  ]);
+  if (!size) return;
+  const n = size.value || (await askCount());
+  if (!n) return;
+
+  const cron = await pick("Tuned Team (3/3): zadanie cykliczne?", "Kierownik ustawi je zaraz po starcie", [
+    { label: "Nie", description: "bez zadań w tle", value: "" },
+    {
+      label: "Tak, co godzinę release",
+      description: "kierownik prosi prawą rękę o sprawdzenie nowych commitów i release",
+      value: "co godzinę napisz do prawej ręki: sprawdź nowe commity na głównej gałęzi i zrób release, jeśli są.",
+    },
+    { label: "Własne…", description: "wpiszesz sam, co i jak często", value: "custom" },
+  ]);
+  if (!cron) return;
+  let cronText = cron.value;
+  if (cron.value === "custom") {
+    cronText = await vscode.window.showInputBox({
+      title: "Tuned Team: własne zadanie cykliczne",
+      prompt: "Co ma się powtarzać i jak często? Np. co 30 minut: sprawdź, czy testy przechodzą.",
+      ignoreFocusOut: true,
+    });
+    if (!cronText) return;
+  }
+  return team(n, { model: model.value, sizeLabel: size.label.toLowerCase(), cron: cronText });
 }
 
 // One more colleague in a new editor group to the right (kierownik calls it).

@@ -25,13 +25,18 @@ Zamiast jednego okna z agentem masz kilka naraz. Ty rozmawiasz głównie z kiero
 - Gdy kierownik potrzebuje więcej rąk, wywołuje `Tuned Team: dodaj kolegę` (adres `…://zbela.tuned-team/add`), a nowe okno pojawia się po prawej.
 
 ```mermaid
-flowchart LR
-  T[Ty] --> K[#0 kierownik]
-  K -->|zadanie| C[#N kolega]
-  K -->|sprawy zespołu| P[#1 prawa ręka]
+flowchart TB
+  T[Ty]
+  subgraph D[Dowodzenie]
+    direction LR
+    K["#0 kierownik"] <-->|sprawy zespołu; decyzje dla Ciebie idą przez kierownika| P["#1 prawa ręka"]
+  end
+  C["#N koledzy"]
+  T <-->|rozmowa| K
+  K -->|zadania| C
   P -->|zadania dla wolnych| C
-  C -->|tylko gdy trzeba działania| P
-  C -->|pytania wymagające Twojej decyzji| T
+  C -->|blokada, przekazanie zadań| P
+  C -->|pytania do Ciebie, w swoim oknie| T
 ```
 
 ### Co jest w wersji 0.1.0
@@ -108,15 +113,29 @@ Otwórz folder projektu, potem Cmd+Shift+P:
 
 | Polecenie | Co robi |
 |---|---|
-| Tuned Team: start | pyta, ilu kolegów, i otwiera zespół |
+| Tuned Team: start | kreator z trzema pytaniami (model, rozmiar pracy, zadanie cykliczne), potem otwiera zespół |
 | Tuned Team: dodaj kolegę | dokłada jeszcze jednego kolegę po prawej |
 | Tuned Team: podpisz karty numerami | nadaje kartom nazwy z numerem i kolorem |
 
-Kierownik startuje sam z komunikatem „start” i pyta Ciebie, co robimy.
+Po „Tuned Team: start” odpowiadasz na trzy pytania (Esc przerywa, nic się wtedy nie otwiera):
+
+1. **Jaki model?** Opus (polecamy, najlepsza jakość), Sonnet (szybszy, zużywa mniej limitu) albo domyślny z Claude Code. Dotyczy wszystkich okien.
+2. **Jak duże zadanie?** Od tego zależy, ilu kolegów polecamy (tabela niżej). Możesz też wpisać własną liczbę.
+3. **Zadanie cykliczne?** Nie, „co godzinę release” albo własne. Kierownik ustawi je zaraz po starcie. Opis w sekcji „Zadania cykliczne (cron)”.
+
+Kierownik startuje z komunikatem „start” plus Twoimi odpowiedziami i pyta, co robimy.
 
 ### Ile okien otwierać
 
-Domyślnie polecenie „Tuned Team: start” podpowiada **2 kolegów**. Razem z kierownikiem i prawą ręką to **4 okna**. Skrót w terminalu bez liczby też otwiera 2 kolegów. Możesz wpisać od 1 do 20.
+Kreator podpowiada liczbę kolegów według wielkości zadania. Do liczby okien dolicz kierownika i prawą rękę.
+
+| Zadanie | Polecamy kolegów | Okien razem |
+|---|---|---|
+| jedna funkcja albo poprawka | 2 | 4 |
+| kilka zadań, pół dnia | 4 | 6 |
+| cały dzień kodowania | 6 | 8 |
+
+To podpowiedzi, nie reguły. Własną liczbę (od 1 do 20) wpiszesz w kreatorze. Skrót w terminalu bez liczby otwiera 2 kolegów i pomija pytania.
 
 - **Zacznij od 2 i dokładaj w miarę potrzeby** poleceniem „Tuned Team: dodaj kolegę”. Nowe okno pojawia się po prawej.
 - **Tylu kolegów, ile masz niezależnych zadań naraz**, czyli takich, które dotykają innych plików i innych branchy. Kolega bez zadania czeka i nic nie robi, a kierownik i prawa ręka muszą o nim pamiętać.
