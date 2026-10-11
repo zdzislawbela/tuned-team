@@ -1,8 +1,8 @@
 {
   "name": "tuned-team",
   "displayName": "Tuned Team",
-  "description": "Zespół agentów Claude Code w jednym oknie: kierownik, prawa ręka i koledzy, każdy z własną rolą",
-  "version": "0.1.5",
+  "description": "A team of Claude Code agents in one window: manager, deputy and colleagues, each with its own role",
+  "version": "0.1.6",
   "publisher": "zbela",
   "license": "UNLICENSED",
   "repository": {
@@ -24,11 +24,11 @@
       },
       {
         "command": "tunedTeam.add",
-        "title": "Tuned Team: dodaj kolegę"
+        "title": "Tuned Team: add colleague"
       },
       {
         "command": "tunedTeam.label",
-        "title": "Tuned Team: podpisz karty numerami"
+        "title": "Tuned Team: label tabs with numbers"
       }
     ]
   }

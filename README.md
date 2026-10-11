@@ -1,30 +1,32 @@
 # Tuned Team
 
-Rozszerzenie VS Code, które otwiera zespół agentów Claude Code w jednym oknie. Każdy agent ma swój terminal, kolor i rolę:
+A VS Code extension that opens a team of Claude Code agents in one window. Each agent has its own terminal, colour and role:
 
-- **#0 kierownik** rozmawia z Tobą i rozdziela zadania,
-- **#1 prawa ręka** pilnuje stanu zespołu i porządków,
-- **#2, #3… koledzy** robią zadania, każdy na własnym branchu.
+- **#0 manager** talks to you and hands out tasks,
+- **#1 deputy** watches team state and housekeeping,
+- **#2, #3… colleagues** do the tasks, each on its own branch.
 
-## Jak to działa
+> Naming: window names and role files keep their original Polish ids: `0-kierownik` (manager), `1-prawa-reka` (deputy), `N-kolega` (colleague). Terminal tabs show the English names.
 
-Zamiast jednego okna z agentem masz kilka naraz. Ty rozmawiasz głównie z kierownikiem, a on rozdziela pracę.
+## How it works
+
+Instead of one window with one agent, you get several at once. You mostly talk to the manager, who hands out the work.
 
 ```
 ┌──────────────┬──────────────┬──────────────┐
-│ #0 kierownik │ #1 prawa ręka│ #2 kolega    │
+│ #0 manager   │ #1 deputy    │ #2 colleague │
 ├──────────────┼──────────────┼──────────────┤
-│ #3 kolega    │ #4 kolega    │ #5 kolega    │
+│ #3 colleague │ #4 colleague │ #5 colleague │
 └──────────────┴──────────────┴──────────────┘
 ```
 
-- Każda kratka to osobny terminal z `claude`, uruchomiony z nazwą okna (`0-kierownik`, `1-prawa-reka`, `3-kolega`) i z rolą z pliku Markdown. Agenci znają się po tych nazwach i piszą do siebie przez `SendMessage`.
-- Każde okno ma własny kolor tła, żeby od razu widać było, w którym jesteś. Paleta ma 15 kolorów (`colors.json`), dalej kolory są wyliczane.
-- Kierownik dostaje na starcie „start” i pyta Cię, co robimy. Zadania daje wolnym kolegom, krótko i z odwołaniem do zasad w `kolega.md`.
-- Kolega pracuje na własnym branchu i osobnym worktree, żeby nie nadpisywać plików innych. Przed scaleniem odpala testy.
-- Gdy kierownik potrzebuje więcej rąk, wywołuje `Tuned Team: dodaj kolegę` (adres `…://zbela.tuned-team/add`), a nowe okno pojawia się po prawej.
+- Each cell is a separate terminal running `claude`, started with a window name (`0-kierownik`, `1-prawa-reka`, `3-kolega`) and a role from a Markdown file. Agents know each other by these names and write to each other with `SendMessage`.
+- Each window has its own background colour, so you see at a glance which one you are in. The palette has 15 colours (`colors.json`); beyond that, colours are computed.
+- The manager gets "start" on launch and asks you what we are doing. It gives tasks to free colleagues, briefly, pointing to the rules in `kolega.md`.
+- A colleague works on its own branch and a separate worktree, so it does not overwrite other people's files. It runs the tests before merging.
+- When the manager needs more hands, it calls `Tuned Team: add colleague` (address `…://zbela.tuned-team/add`), and a new window appears on the right.
 
-Tak płynie praca. Na górze koledzy (tu 8 dla przykładu, zwykle wystarcza 2–6), pod nimi kierownik i prawa ręka, na dole Ty:
+This is how the work flows. Colleagues at the top (8 here as an example, 2–6 is usually enough), the manager and deputy below them, you at the bottom:
 
 ```
 ┌───────┐ ┌───────┐ ┌───────┐ ┌───────┐
@@ -33,166 +35,163 @@ Tak płynie praca. Na górze koledzy (tu 8 dla przykładu, zwykle wystarcza 2–
 ┌───────┐ ┌───────┐ ┌───────┐ ┌───────┐
 │   #6  │ │   #7  │ │   #8  │ │   #9  │
 └───────┘ └───────┘ └───────┘ └───────┘
-         ▲ zadania            ▲ zadania
+         ▲ tasks              ▲ tasks
 ┌────────────────┐   ┌────────────────┐
-│  #0 kierownik  │   │ #1 prawa ręka  │
+│   #0 manager   │   │   #1 deputy    │
 └────────────────┘   └────────────────┘
          ▲                    ▲
-         │ rozmowa            ┆ gdy kierownik nie odpowiada
+         │ conversation       ┆ when the manager does not answer
          └────────┐    ┌──────┘
                ┌──┴────┴──┐
-               │    Ty    │
+               │   You    │
                └──────────┘
 ```
 
-- Rozmawiasz z kierownikiem. Prawa ręka stoi obok niego i zastępuje go, gdy kierownik nie odpowiada (linia przerywana).
-- Kierownik i prawa ręka dają zadania kolegom.
-- Koledzy pytają Cię wprost w swoim oknie, bez pośredników.
+- You talk to the manager. The deputy stands next to them and stands in when the manager does not answer (dashed line).
+- The manager and the deputy give tasks to colleagues.
+- Colleagues ask you directly in their own window, with no go-between.
 
-**Po co dwie osoby na górze.** Prawa ręka jest zastępcą kierownika. Gdy kierownik padnie (okno się zamknie, kontekst się zapełni, przestanie odpowiadać), prawa ręka przejmuje rozmowę z Tobą i może pisać do Ciebie wprost. Normalnie rozmawiasz z kierownikiem, a prawa ręka prowadzi sprawy zespołu w tle.
+**Why two people on top.** The deputy is the manager's stand-in. When the manager goes down (window closed, context full, stops answering), the deputy takes over the conversation with you and may write to you directly. Normally you talk to the manager, and the deputy runs team matters in the background.
 
-### Tuned Team a agency-agents: po co oba
+### Tuned Team and agency-agents: why both
 
-[agency-agents](https://github.com/msitarzewski/agency-agents) to zestaw ponad 230 gotowych opisów specjalistów (frontend, bezpieczeństwo, testy, marketing…). To wiedza: kim jest taki agent i jak pracuje. Tuned Team to organizacja pracy: kto rozdziela zadania, kto zastępuje kierownika, ile okien działa naraz.
+[agency-agents](https://github.com/msitarzewski/agency-agents) is a set of 230+ ready-made specialist descriptions (frontend, security, testing, marketing…). It is knowledge: who such an agent is and how it works. Tuned Team is the organisation of work: who hands out tasks, who stands in for the manager, how many windows run at once.
 
-- Tuned Team bez agency-agents: koledzy są ogólnymi agentami, bez specjalizacji.
-- Agency-agents bez Tuned Team: wołasz specjalistów pojedynczo, w jednej rozmowie, bez rozdzielania pracy.
-- Razem: kierownik daje koledze zadanie, a kolega woła specjalistę jako subagenta. Subagent pracuje we własnym, czystym kontekście i oddaje tylko podsumowanie, więc okno kolegi się nie zapełnia.
+- Tuned Team without agency-agents: colleagues are general agents, with no specialty.
+- Agency-agents without Tuned Team: you call specialists one at a time, in one conversation, with no division of work.
+- Together: the manager gives a colleague a task, and the colleague calls a specialist as a subagent. The subagent works in its own clean context and hands back only a summary, so the colleague's window does not fill up.
 
-Instalacja specjalistów: według instrukcji agency-agents, np. `./scripts/install.sh --tool claude-code`, co kopiuje pliki do `~/.claude/agents/`. Nie sprawdziliśmy jeszcze tego połączenia w oknie Tuned Team. Spodziewamy się, że działa, bo to zwykłe subagenty Claude Code, ale to założenie.
+Installing the specialists: follow the agency-agents instructions, e.g. `./scripts/install.sh --tool claude-code`, which copies files to `~/.claude/agents/`. We have not yet tested this combination in a Tuned Team window. We expect it to work, because these are ordinary Claude Code subagents, but that is an assumption.
 
-### Co jest w wersji 0.1.0
+### What is in version 0.1.0
 
-- Układ okien, kolory kart, role, dokładanie kolegów i podpisywanie kart numerami.
-- Role są zwykłymi plikami Markdown. Możesz je zmienić (sekcja „Własne role” niżej).
-- Nie ma okienek systemowych ani dźwięków. Wtyczka niczego nie powiadamia poza oknem edytora.
+- Window layout, tab colours, roles, adding colleagues and labelling tabs with numbers.
+- Roles are plain Markdown files. You can change them (see "Custom roles" below).
+- There are no system pop-ups or sounds. The extension notifies nothing outside the editor window.
 
-### Planowane w 0.2.0 (jeszcze nie ma w repo)
+### Planned for 0.2.0 (not in the repo yet)
 
-Rzeczy, które działają u autora, ale nie zostały jeszcze przeniesione do tego repo:
+Things that work for the author but have not been moved to this repo yet:
 
-- **Pasek stanu z procentem kontekstu.** Do 29% zwykły pasek (`repo (main) | Opus | ctx 22%`). Od 30% czerwony procent z opisem limitu kontekstu: agent nie bierze nowych zadań i kończy bieżące. Od 35% przekazuje otwarte zadania koledze z czystym oknem.
-- **„DAJ CLEAR'A”.** Gdy kolega skończy, scali pracę i przekaże zadania, wpisuje `tuned-daj-clear`. Pasek pokazuje wtedy duży, kolorowy napis DAJ CLEAR'A. To znak, że można wyczyścić kontekst (`/clear`). Po czyszczeniu napis znika sam.
-- **Meldunki bez wiadomości.** `tuned-meldunek start "~15:00" "co robię"`, `eta`, `gotowe "commit abc123"` zapisują stan do pliku, więc nie zużywają tokenów.
-- **Tabela zespołu** (`tuned-agenci`): kto czeka na Ciebie, kto pracuje, kto jest wolny, ile ma kontekstu i jaką ETA.
+- **Status bar with context percentage.** Up to 29% a plain bar (`repo (main) | Opus | ctx 22%`). From 30% a red percentage with a CONTEXT ALERT note: the agent takes no new tasks and finishes the current one. From 35% it hands its open tasks to a colleague with a clean window.
+- **READY TO CLEAR.** When a colleague has finished, merged its work and handed over its tasks, it runs `tuned-daj-clear`. The bar then shows a clear READY TO CLEAR label. It is the sign that the context can be cleared (`/clear`). The label disappears after clearing.
+- **Reports without messages.** `tuned-meldunek start "~15:00" "what I'm doing"`, `eta`, `gotowe "commit abc123"` write state to a file, so they use no tokens.
+- **Team table** (`tuned-agenci`): who is waiting for you, who is working, who is free, how much context each has and its ETA.
 
-### Limit kontekstu: co to znaczy
+### Context limit: what it means
 
-Agent „pamięta” rozmowę w oknie o skończonej wielkości, które nazywa się kontekstem. Pasek stanu pokazuje, ile z niego jest zajęte (`ctx 31%`). Im bliżej limitu, tym gorzej agent pracuje i tym drożej, więc po jakimś czasie okno trzeba wyczyścić (`/clear`) i zacząć od zera. Zespół robi to w kolejności, żeby nic się nie zgubiło. Progi to ustawienia autora, nie zasada Claude Code.
+An agent "remembers" the conversation in a window of finite size, called the context. The status bar shows how much of it is used (`ctx 31%`). The closer to the limit, the worse the agent works and the more it costs, so after a while the window has to be cleared (`/clear`) and started from scratch. The team does this in order so nothing is lost. The thresholds are the author's settings, not a Claude Code rule.
 
-Tak wygląda pasek w kolejnych stanach (kolorów na GitHubie nie widać, w edytorze procent jest czerwony od 30%):
+This is what the bar looks like in successive states (colours are not visible on GitHub; in the editor the percentage is red from 30%):
 
 ```
-do 29%    repo (main) | Opus | ctx 22%
-od 30%    repo (main) | Opus | ctx 31% · limit kontekstu     agent nie bierze nowych zadań, kończy bieżące
-od 35%    repo (main) | Opus | ctx 36% · limit kontekstu     agent przekazuje zadania koledze z czystym oknem
-gotowe    repo (main) | Opus | ctx 36%
-          █▀▄ ▄▀▄   █   █▀▀ █   █▀▀ ▄▀▄ █▀▄ ▀ ▄▀▄
-          █ █ █▀█ ▄ █   █   █   █▀  █▀█ █▀▄   █▀█
-          ▀▀  ▀ ▀ ▀▀    ▀▀▀ ▀▀▀ ▀▀▀ ▀ ▀ ▀ ▀   ▀ ▀
-          ^ kolega zgłosił tuned-daj-clear: wielki napis DAJ CLEAR'A, czyli wpisz /clear
+up to 29%  repo (main) | Opus | ctx 22%
+from 30%   repo (main) | Opus | ctx 31% · CONTEXT ALERT     agent takes no new tasks, finishes the current one
+from 35%   repo (main) | Opus | ctx 36% · CONTEXT ALERT     agent hands its tasks to a colleague with a clean window
+done       repo (main) | Opus | ctx 36% · READY TO CLEAR
+           ^ a colleague ran tuned-daj-clear: nothing is open, you can type /clear
 ```
 
-To jest podgląd planowanego wyglądu z 0.2.0, nie zrzut z działającej wtyczki.
+This is a preview of the planned 0.2.0 look, not a screenshot of the working extension.
 
-### Zadania cykliczne (cron)
+### Recurring tasks (cron)
 
-Wtyczka niczego nie uruchamia sama w tle. Jeśli chcesz, żeby zespół robił coś co jakiś czas (np. co godzinę sprawdzał nowe commity i robił release), poproś o to kierownika w jego oknie, na przykład:
+The extension starts nothing in the background on its own. If you want the team to do something regularly (e.g. check for new commits and release every hour), ask the manager in its window, for example:
 
-> Ustaw zadanie cykliczne co godzinę: napisz do prawej ręki „sprawdź nowe commity na main i zrób release, jeśli są”.
+> Set up a recurring task every hour: write to the deputy "check for new commits on main and release if there are any".
 
-Claude Code ma na to polecenie `/loop` i narzędzie do zadań cyklicznych. Zwykle działają tylko tak długo, jak sesja: po zamknięciu okna albo `/clear` ich nie ma i trzeba poprosić ponownie (sprawdź w dokumentacji Claude Code, jak jest w Twojej wersji).
+Claude Code has the `/loop` command and a recurring-task tool for this. They usually last only as long as the session: after the window is closed or after `/clear` they are gone and you have to ask again (check the Claude Code docs for how it works in your version).
 
-Żeby nie prosić za każdym razem, dopisz to do własnej roli kierownika w `~/.tuned-team/roles/kierownik.md`, w punkcie „Na start”, np. „ustaw zadanie cykliczne co godzinę: …”. Kierownik wykona to przy każdym starcie zespołu. Wbudowana rola kierownika nie ustawia żadnych zadań cyklicznych.
+To avoid asking every time, add it to your own manager role in `~/.tuned-team/roles/kierownik.md`, under "On start", e.g. "set up a recurring task every hour: …". The manager will do it at every team start. The built-in manager role sets no recurring tasks.
 
-## Wymagania
+## Requirements
 
-- macOS albo Linux (w Windows tylko przez WSL).
-- VS Code 1.90 lub nowszy. Powinno działać też w Cursorze, Windsurfie i VSCodium, ale tego nie testowałem.
-- Zainstalowany [Claude Code](https://claude.com/claude-code) (polecenie `claude` w terminalu) i zalogowane konto.
-- `perl` (jest w macOS i w większości Linuksów).
+- macOS or Linux (on Windows only through WSL).
+- VS Code 1.90 or newer. It should also work in Cursor, Windsurf and VSCodium, but I have not tested that.
+- [Claude Code](https://claude.com/claude-code) installed (the `claude` command in the terminal) and a signed-in account.
+- `perl` (present on macOS and most Linux systems).
 
-Nie zadziała w PhpStormie ani w innych IDE od JetBrains.
+It will not work in PhpStorm or other JetBrains IDEs.
 
-## Instalacja
+## Installation
 
 ```sh
 git clone git@github.com:zdzislawbela/tuned-team.git
 cd tuned-team
 ./install.sh            # VS Code
-./install.sh cursor     # Cursor (analogicznie: windsurf, codium)
+./install.sh cursor     # Cursor (likewise: windsurf, codium)
 ```
 
-Jeśli skrypt nie widzi polecenia `code`: w VS Code wciśnij Cmd+Shift+P (Ctrl+Shift+P w Linuksie) i wybierz „Shell Command: Install 'code' command in PATH”, potem uruchom ponownie terminal.
+If the script does not find the `code` command: in VS Code press Cmd+Shift+P (Ctrl+Shift+P on Linux) and choose "Shell Command: Install 'code' command in PATH", then restart the terminal.
 
-Bez skryptu: Cmd+Shift+P → „Extensions: Install from VSIX…” i wskaż plik z `dist/`.
+Without the script: Cmd+Shift+P → "Extensions: Install from VSIX…" and point to the file in `dist/`.
 
-Po instalacji przeładuj okno (Cmd+Shift+P → „Developer: Reload Window”).
+After installing, reload the window (Cmd+Shift+P → "Developer: Reload Window").
 
-## Użycie
+## Usage
 
-Otwórz folder projektu, potem Cmd+Shift+P:
+Open a project folder, then Cmd+Shift+P:
 
-| Polecenie | Co robi |
+| Command | What it does |
 |---|---|
-| Tuned Team: start | kreator z trzema pytaniami (model, rozmiar pracy, zadanie cykliczne), potem otwiera zespół |
-| Tuned Team: dodaj kolegę | dokłada jeszcze jednego kolegę po prawej |
-| Tuned Team: podpisz karty numerami | nadaje kartom nazwy z numerem i kolorem |
+| Tuned Team: start | wizard with three questions (model, size of the work, recurring task), then opens the team |
+| Tuned Team: add colleague | adds one more colleague on the right |
+| Tuned Team: label tabs with numbers | gives tabs a name with a number and a colour |
 
-Po „Tuned Team: start” odpowiadasz na trzy pytania (Esc przerywa, nic się wtedy nie otwiera):
+After "Tuned Team: start" you answer three questions (Esc cancels, nothing opens then):
 
-1. **Jaki model?** Opus (polecamy, najlepsza jakość), Sonnet (szybszy, zużywa mniej limitu) albo domyślny z Claude Code. Dotyczy wszystkich okien.
-2. **Jak duże zadanie?** Od tego zależy, ilu kolegów polecamy (tabela niżej). Możesz też wpisać własną liczbę.
-3. **Zadanie cykliczne?** Nie, „co godzinę release” albo własne. Kierownik ustawi je zaraz po starcie. Opis w sekcji „Zadania cykliczne (cron)”.
+1. **Which model?** Opus (recommended, best quality), Sonnet (faster, uses less of your limit) or the Claude Code default. It applies to colleagues; the manager and the deputy always run on Opus.
+2. **How big is the work?** This decides how many colleagues we suggest (table below). You can also type your own number.
+3. **Recurring task?** No, "release every hour", or your own. The manager sets it up right after start. See the "Recurring tasks (cron)" section.
 
-Kierownik startuje z komunikatem „start” plus Twoimi odpowiedziami i pyta, co robimy.
+The manager starts with the message "start" plus your answers and asks what we are doing.
 
-### Ile okien otwierać
+### How many windows to open
 
-Kreator podpowiada liczbę kolegów według wielkości zadania. Do liczby okien dolicz kierownika i prawą rękę.
+The wizard suggests a number of colleagues by the size of the work. Add the manager and the deputy to get the number of windows.
 
-| Zadanie | Polecamy kolegów | Okien razem |
+| Work | Suggested colleagues | Windows in total |
 |---|---|---|
-| jedna funkcja albo poprawka | 2 | 4 |
-| kilka zadań, pół dnia | 4 | 6 |
-| cały dzień kodowania | 6 | 8 |
+| one feature or fix | 2 | 4 |
+| a few tasks, half a day | 4 | 6 |
+| a full day of coding | 6 | 8 |
 
-To podpowiedzi, nie reguły. Własną liczbę (od 1 do 20) wpiszesz w kreatorze. Skrót w terminalu bez liczby otwiera 2 kolegów i pomija pytania.
+These are suggestions, not rules. You can type your own number (1 to 20) in the wizard. The terminal shortcut without a number opens 2 colleagues and skips the questions.
 
-- **Zacznij od 2 i dokładaj w miarę potrzeby** poleceniem „Tuned Team: dodaj kolegę”. Nowe okno pojawia się po prawej.
-- **Tylu kolegów, ile masz niezależnych zadań naraz**, czyli takich, które dotykają innych plików i innych branchy. Kolega bez zadania czeka i nic nie robi, a kierownik i prawa ręka muszą o nim pamiętać.
-- **Dobre zadanie dla kolegi** da się opisać w 2–4 zdaniach (co i po co) i skończyć bez ciągłych pytań do Ciebie. Zadania, które zmieniają te same pliki, daj jednemu koledze, bo dwóch zacznie się nadpisywać.
-- **Każde pracujące okno zużywa limit Twojego konta Claude.** Im więcej okien działa naraz, tym szybciej kończy się limit tygodniowy. Autor trzyma się najwyżej 8 okien (kierownik, prawa ręka i 6 kolegów) i zmierzył, że przy 15 oknach pracujących naraz limit schodził o ok. 1% na 10 minut. To pomiar z jednego konta i jednego planu, u Ciebie może być inaczej.
+- **Start with 2 and add more as needed** with the "Tuned Team: add colleague" command. The new window appears on the right.
+- **As many colleagues as you have independent tasks at once**, meaning ones that touch different files and different branches. A colleague with no task waits and does nothing, and the manager and the deputy have to remember it. 
+- **A good task for a colleague** can be described in 2–4 sentences (what and why) and finished without constant questions to you. Give tasks that change the same files to one colleague, because two will start overwriting each other.
+- **Every working window uses up your Claude account limit.** The more windows run at once, the faster the weekly limit runs out. The author sticks to at most 8 windows (manager, deputy and 6 colleagues) and measured that with 15 windows working at once the limit dropped by about 1% per 10 minutes. That is a measurement from one account and one plan; yours may differ.
 
-### Skrót w terminalu (opcjonalnie)
+### Terminal shortcut (optional)
 
-Dodaj do `~/.zshrc`:
+Add to `~/.zshrc`:
 
 ```sh
 tuned-team() { open "vscode://zbela.tuned-team/team?n=${1:-2}"; }
 ```
 
-`tuned-team 4` otworzy kierownika, prawą rękę i czterech kolegów. W Cursorze zamień `vscode://` na `cursor://`, w Windsurfie na `windsurf://`. W Linuksie zamiast `open` użyj `xdg-open`.
+`tuned-team 4` opens the manager, the deputy and four colleagues. In Cursor replace `vscode://` with `cursor://`, in Windsurf with `windsurf://`. On Linux use `xdg-open` instead of `open`.
 
-## Własne role
+## Custom roles
 
-Role to zwykłe pliki Markdown: `kierownik.md`, `prawa-reka.md`, `kolega.md`. Rozszerzenie bierze je z `~/.tuned-team/roles/` i dopiero gdy ich tam nie ma, używa wbudowanych z `defaults/roles/`.
+Roles are plain Markdown files: `kierownik.md` (manager), `prawa-reka.md` (deputy), `kolega.md` (colleague). The extension takes them from `~/.tuned-team/roles/` and uses the built-in ones from `defaults/roles/` only when they are not there.
 
 ```sh
 mkdir -p ~/.tuned-team/roles
 cp defaults/roles/*.md ~/.tuned-team/roles/
 ```
 
-Zmieniasz tam pliki i otwierasz zespół od nowa. W tekście roli możesz użyć dwóch znaczników: `{{ROLES}}` (folder z rolami, np. do „Zasady: {{ROLES}}/kolega.md”) i `{{ADD_URL}}` (adres, którym kierownik dokłada kolegę).
+Change the files there and open the team again. In a role text you can use two placeholders: `{{ROLES}}` (the roles folder, e.g. for "Rules: {{ROLES}}/kolega.md") and `{{ADD_URL}}` (the address the manager uses to add a colleague).
 
-## Aktualizacja i odinstalowanie
+## Updating and uninstalling
 
-Aktualizacja: `git pull && ./install.sh`. Odinstalowanie: Extensions → Tuned Team → Uninstall. Własne role w `~/.tuned-team/` zostają.
+Update: `git pull && ./install.sh`. Uninstall: Extensions → Tuned Team → Uninstall. Your own roles in `~/.tuned-team/` stay.
 
-## Dla autora: nowa wersja
+## For the author: a new version
 
 ```sh
-npx --yes @vscode/vsce package --allow-missing-repository --skip-license -o dist/tuned-team-<wersja>.vsix
+npx --yes @vscode/vsce package --allow-missing-repository --skip-license -o dist/tuned-team-<version>.vsix
 ```
 
-Podbij `version` w `package.json` przed budowaniem i dołącz nowy plik z `dist/` do commita.
+Bump `version` in `package.json` before building and include the new file from `dist/` in the commit.

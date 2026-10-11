@@ -1,4 +1,4 @@
 .DS_Store
-# prywatne role właściciela; wtyczka czyta je z ~/.tuned-team/roles
+# the owner's private roles; the extension reads them from ~/.tuned-team/roles
 /roles/
 tuned-layout.vsix
