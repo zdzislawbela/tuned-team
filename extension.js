@@ -1,5 +1,5 @@
 // Tuned Team: a team of Claude Code agents in one editor window.
-// 0-manager, 1-deputy and N colleagues, each in its
+// manager, deputy and N colleagues (numbered from 1), each in its
 // own editor group, with a role from a .md file (--append-system-prompt). Roles:
 // ~/.tuned-team/roles/<role>.md (your own) or defaults/roles/<role>.md from this extension.
 const vscode = require("vscode");
@@ -54,22 +54,42 @@ const cwdOf = () => vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
 // One member: a terminal named like the session, claude with its role.
 // perl replaces {{ROLES}} and {{ADD_URL}} in the role file (via environment
 // variables, so paths with spaces and apostrophes are safe).
-function member(nr, role, viewColumn, cwd, opts = session) {
-  const name = nr === 0 ? "0-manager" : nr === 1 ? "1-deputy" : `${nr}-colleague`;
-  const label = `#${nr} ${role}`;
-  const t = vscode.window.createTerminal({ name: `${dotOf(nr)} ${label}`.trim(), cwd, location: { viewColumn, preserveFocus: true } });
+function launchCmd(nr, role, cwd, opts = session) {
+  const name = nr === 0 ? "manager" : nr === 1 ? "deputy" : `${nr - 1}-colleague`;
   // Manager and deputy always run on Opus; the wizard's model applies to colleagues.
   const chosen = nr <= 1 ? "opus" : opts.model;
   const model = chosen ? ` --model ${quote(chosen)}` : "";
+  // Lean start: no skills, no MCP servers. Colleagues keep only the project's own .mcp.json (e.g. the database).
+  const hasMcp = cwd && fs.existsSync(path.join(cwd, ".mcp.json"));
+  const lean = ` --disable-slash-commands --strict-mcp-config${nr >= 2 && hasMcp ? " --mcp-config .mcp.json" : ""}`;
   const start = nr === 0 ? ` ${quote(startMessage(opts))}` : "";
   const roles = path.dirname(roleFile("colleague"));
   const addUrl = `${vscode.env.uriScheme}://${EXT_ID}/add`;
   const prompt =
     `"$(TT_ROLES=${quote(roles)} TT_ADD=${quote(addUrl)} ` +
-    `perl -pe 's/\\{\\{ROLES\\}\\}/$ENV{TT_ROLES}/g; s/\\{\\{ADD_URL\\}\\}/$ENV{TT_ADD}/g' ${quote(roleFile(role))})"`;
+    `perl -pe 's/\\{\\{ROLES\\}\\}/$ENV{TT_ROLES}/g; s/\\{\\{ADD_URL\\}\\}/$ENV{TT_ADD}/g' ${quote(roleFile(role))}; ` +
+    `printf '\\n\\nLanguage: ${opts.lang === "pl" ? "reply to the owner and write to teammates in Polish" : "reply to the owner and write to teammates in English"}.\\n')"`;
   const banner = nr === 0 ? `printf '${bannerSeq}'; ` : "";
-  t.sendText(`printf '${tintSeq(nr)}'; ${banner}claude -n ${name}${model} --append-system-prompt ${prompt}${start}`);
+  return `printf '${tintSeq(nr)}'; ${banner}claude -n ${name}${model}${lean} --append-system-prompt ${prompt}${start}`;
+}
+
+function member(nr, role, viewColumn, cwd, opts = session) {
+  const label = nr >= 2 ? `#${nr - 1} ${role}` : role[0].toUpperCase() + role.slice(1);
+  const t = vscode.window.createTerminal({ name: `${dotOf(nr)} ${label}`.trim(), cwd, location: { viewColumn, preserveFocus: true } });
+  t.sendText(launchCmd(nr, role, cwd, opts));
   return t;
+}
+
+// Cull: exit a colleague's claude and start it fresh in the same terminal.
+// Only for colleagues; the deputy calls it when the team table shows READY TO CLEAR for that colleague.
+async function restart(k) {
+  if (!(k >= 1)) return vscode.window.showErrorMessage("Tuned Team: only colleagues (#1 and up) can be restarted.");
+  const nr = k + 1;
+  const t = vscode.window.terminals.find((x) => new RegExp(`#${k} colleague`).test(x.name));
+  if (!t) return vscode.window.showErrorMessage(`Tuned Team: no colleague #${k}.`);
+  t.sendText("/exit");
+  await sleep(3000);
+  t.sendText(launchCmd(nr, "colleague", cwdOf()));
 }
 
 // Settings from the wizard; "add colleague" in the same editor window uses them too.
@@ -85,7 +105,8 @@ function startMessage(opts) {
 
 // Numbers already open in this window (terminals are named "#N role").
 function taken() {
-  return vscode.window.terminals.map((t) => /#(\d+) /.exec(t.name)).filter(Boolean).map((m) => Number(m[1]));
+  // Slots: manager 0, deputy 1, colleague k = k + 1 (terminals are named "#k colleague").
+  return vscode.window.terminals.map((t) => /#(\d+) colleague/.exec(t.name)).filter(Boolean).map((m) => Number(m[1]) + 1);
 }
 
 function supported() {
@@ -197,9 +218,11 @@ async function label() {
       } catch {
         continue;
       }
-      const m = /^(\d+)-(.+)$/.exec(session.name || "");
-      if (!m) continue;
-      const nr = m[1];
+      const sn = session.name || "";
+      const m = /^(\d+)-(.+)$/.exec(sn);
+      const nr = String(sn === "manager" ? 0 : sn === "deputy" ? 1 : m ? Number(m[1]) + 1 : -1);
+      if (nr === "-1") continue;
+      const title = m ? `#${m[1]} ${m[2].replace(/-/g, " ")}` : sn[0].toUpperCase() + sn.slice(1);
       // Background: sequence straight to the claude process's tty, without typing into its prompt.
       try {
         const tty = execFileSync("ps", ["-o", "tty=", "-p", pid], { encoding: "utf8" }).trim();
@@ -212,7 +235,7 @@ async function label() {
       try {
         dot = JSON.parse(fs.readFileSync(path.join(extensionPath, "colors.json"), "utf8"))[nr]?.[0] || "";
       } catch {}
-      await vscode.commands.executeCommand("workbench.action.terminal.renameWithArg", { name: `${dot} #${nr} ${m[2].replace(/-/g, " ")}`.trim() });
+      await vscode.commands.executeCommand("workbench.action.terminal.renameWithArg", { name: `${dot} ${title}`.trim() });
       await sleep(100);
     }
   }
@@ -231,10 +254,12 @@ exports.activate = (context) => {
     vscode.window.registerUriHandler({
       handleUri: (uri) => {
         if (uri.path === "/add") return add();
+        if (uri.path === "/restart") return restart(Number(new URLSearchParams(uri.query).get("nr")));
         if (uri.path === "/label") return label();
         const q = new URLSearchParams(uri.query);
         const model = ["opus", "sonnet"].includes(q.get("model")) ? q.get("model") : "";
-        return team(Math.max(1, Math.min(20, Number(q.get("n")) || 2)), { model });
+        const lang = q.get("lang") === "pl" ? "pl" : "en";
+        return team(Math.max(1, Math.min(20, Number(q.get("n")) || 2)), { model, lang });
       },
     }),
   );

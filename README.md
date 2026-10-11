@@ -2,9 +2,9 @@
 
 A VS Code extension that opens a team of Claude Code agents in one window. Each agent has its own terminal, colour and role:
 
-- **#0 manager** talks to you and hands out tasks,
-- **#1 deputy** watches team state and housekeeping,
-- **#2, #3… colleagues** do the tasks, each on its own branch.
+- **manager** talks to you and hands out tasks,
+- **deputy** watches team state and housekeeping,
+- **#1, #2… colleagues** do the tasks, each on its own branch.
 
 ## How it works
 
@@ -12,44 +12,50 @@ Instead of one window with one agent, you get several at once. You mostly talk t
 
 ```
 ┌──────────────┬──────────────┬──────────────┐
-│ #0 manager   │ #1 deputy    │ #2 colleague │
+│ manager      │ deputy       │ #1 colleague │
 ├──────────────┼──────────────┼──────────────┤
-│ #3 colleague │ #4 colleague │ #5 colleague │
+│ #2 colleague │ #3 colleague │ #4 colleague │
 └──────────────┴──────────────┴──────────────┘
 ```
 
-- Each cell is a separate terminal running `claude`, started with a window name (`0-manager`, `1-deputy`, `3-colleague`) and a role from a Markdown file. Agents know each other by these names and write to each other with `SendMessage`.
+- Each cell is a separate terminal running `claude`, started with a window name (`manager`, `deputy`, `2-colleague`; colleagues are numbered from 1) and a role from a Markdown file. Agents know each other by these names and write to each other with `SendMessage`.
 - Each window has its own background colour, so you see at a glance which one you are in. The palette has 15 colours (`colors.json`); beyond that, colours are computed.
 - The manager gets "start" on launch and asks you what we are doing. It gives tasks to free colleagues, briefly, pointing to the rules in `colleague.md`.
 - A colleague works on its own branch and a separate worktree, so it does not overwrite other people's files. It runs the tests before merging.
 - When the manager needs more hands, it calls `Tuned Team: add colleague` (address `…://zbela.tuned-team/add`), and a new window appears on the right.
 
-This is how the work flows. Colleagues at the top (8 here as an example, 2–6 is usually enough), the manager and deputy below them, you at the bottom:
+This is how the work flows. Tasks go down, reports come back up:
 
 ```
-┌───────┐ ┌───────┐ ┌───────┐ ┌───────┐
-│   #2  │ │   #3  │ │   #4  │ │   #5  │
-└───────┘ └───────┘ └───────┘ └───────┘
-┌───────┐ ┌───────┐ ┌───────┐ ┌───────┐
-│   #6  │ │   #7  │ │   #8  │ │   #9  │
-└───────┘ └───────┘ └───────┘ └───────┘
-         ▲ tasks              ▲ tasks
-┌────────────────┐   ┌────────────────┐
-│   #0 manager   │   │   #1 deputy    │
-└────────────────┘   └────────────────┘
-         ▲                    ▲
-         │ conversation       ┆ when the manager does not answer
-         └────────┐    ┌──────┘
-               ┌──┴────┴──┐
-               │   You    │
-               └──────────┘
+                ┌──────────────┐
+                │   Prompter   │   you: you say what you want
+                └──────────────┘
+                  │          ▲
+       what you want        answers, questions, "done"
+                  ▼          │
+                ┌──────────────┐
+                │   Manager    │   talks to you, hands out tasks
+                └──────────────┘
+                  │          ▲
+   team matters + tasks      only what needs you
+                  ▼          │
+                ┌──────────────┐
+                │    Deputy    │   release, housekeeping, standing tasks,
+                └──────────────┘   stands in for the manager
+                  │          ▲
+                tasks       state: tuned-meldunek (no messages),
+                  ▼          │    messages only for blockers
+   ┌───────┐ ┌───────┐ ┌───────┐ ┌───────┐
+   │  #1   │ │  #2   │ │  #3   │ │  #4   │   colleagues: the only ones
+   └───────┘ └───────┘ └───────┘ └───────┘   who do the work, each on its own branch
 ```
 
-- You talk to the manager. The deputy stands next to them and stands in when the manager does not answer (dashed line).
-- The manager and the deputy give tasks to colleagues.
-- Colleagues ask you directly in their own window, with no go-between.
+- **Prompter** is you. You talk to the manager only.
+- **Manager** talks to you and gives tasks to free colleagues. It does not do tasks itself, writes no code and creates no branches. Team matters it passes to the deputy.
+- **Deputy** runs the team: release, repository housekeeping, standing tasks, who is free. It does not do product tasks either. When the manager goes down (window closed, context full, no answer), the deputy takes over the conversation with you and says so.
+- **Colleagues (#1, #2…)** are the only ones who do tasks. Each new task starts on the colleague's own branch and worktree. They write their state with `tuned-meldunek` (no tokens) and ask you directly in their own window when they need a decision.
 
-**Why two people on top.** The deputy is the manager's stand-in. When the manager goes down (window closed, context full, stops answering), the deputy takes over the conversation with you and may write to you directly. Normally you talk to the manager, and the deputy runs team matters in the background.
+**Why two people on top.** The manager stays free to talk to you while the deputy keeps the team in order in the background.
 
 ### Tuned Team and agency-agents: why both
 
@@ -74,7 +80,7 @@ Things that work for the author but have not been moved to this repo yet:
 - **Status bar with context percentage.** Up to 29% a plain bar (`repo (main) | Opus | ctx 22%`). From 30% a red percentage with a CONTEXT ALERT note: the agent takes no new tasks and finishes the current one. From 35% it hands its open tasks to a colleague with a clean window.
 - **READY TO CLEAR.** When a colleague has finished, merged its work and handed over its tasks, it runs `tuned-daj-clear`. The bar then shows a clear READY TO CLEAR label. It is the sign that the context can be cleared (`/clear`). The label disappears after clearing.
 - **Reports without messages.** `tuned-meldunek start "~15:00" "what I'm doing"`, `eta`, `gotowe "commit abc123"` write state to a file, so they use no tokens.
-- **Team table** (`tuned-agenci`): who is waiting for you, who is working, who is free, how much context each has and its ETA.
+- **Team table** (`tuned-agenci`): laid out like the tree above. Manager and deputy have their own section with their own status (talking, on watch, waiting for you, missing), colleagues are listed below with who is free, who is working, who waits for you, context and ETA.
 
 ### Context limit: what it means
 
