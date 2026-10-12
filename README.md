@@ -216,15 +216,11 @@ Change the files there and open the team again. In a role text you can use two p
 
 Update: `git pull && ./install.sh`. Uninstall: Extensions → Tuned Team → Uninstall. Your own roles in `~/.tuned-team/` stay.
 
-## Example: what it took to build tunedparty.com
+## Built with Tuned Team
 
-[tunedparty.com](https://tunedparty.com) is a party game site built with this team setup. State on 2026-10-12:
+[tunedparty.com](https://tunedparty.com) is built with Tuned Team: a whole product, not a single ticket. Game rooms in 6 languages, a question bank with thousands of questions, a panel for companies, a radio, help pages and a blog. Several colleagues work on it in parallel every day, each on its own branch, while the owner talks only to the manager.
 
-- about **10B tokens** used so far (as shown by Claude),
-- 17 days of work (from 2026-09-25), about 1700 commits,
-- 33 game rooms, 6 languages, over 5300 questions in the bank.
-
-The token count covers the whole project, not only the team windows. How much of your limit that is depends on your plan.
+Tuned Team is not a tool for one Jira task. It replaces a whole team's flow: the manager plans and hands out work, the deputy keeps track of state and releases, colleagues build and test on their own branches, and you decide. For one small fix, a single Claude Code window is enough.
 
 ## For the author: a new version
 
