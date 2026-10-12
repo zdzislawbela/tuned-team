@@ -1,0 +1,88 @@
+#!/bin/sh
+# Tuned Team: asks about the team and opens the windows in VS Code (extension zbela.tuned-team).
+# Usage:  tuned-team                 (asks)
+#         tuned-team 4 sonnet [pl]   (no questions; language defaults to en)
+R='\033[0m'; D='\033[2m'; B='\033[1m'
+
+n="$1"; model="$2"; lang="$3"
+asked=""; [ -z "$n" ] && asked=1
+
+# Banner: letters flash through the team colours, then settle on grey.
+banner() {
+  txt="T U N E D   T E A M"
+  if [ -t 1 ]; then
+    pal="196 208 220 46 51 33 129 201"
+    f=0
+    while [ "$f" -lt 24 ]; do
+      printf '\r  '; i=0
+      for ch in T U N E D '' T E A M; do
+        [ -z "$ch" ] && { printf '   '; continue; }
+        c=$(echo "$pal" | cut -d' ' -f$(( (i + f) % 8 + 1 )))
+        printf "\033[48;5;${c}m\033[38;5;16m\033[1m %s \033[0m" "$ch"
+        i=$((i + 1))
+      done
+      sleep 0.05; f=$((f + 1))
+    done
+    printf '\r\033[2K'
+  fi
+  printf "\033[48;5;240m\033[38;5;255m\033[1m  %s  ${R}\n" "$txt"
+}
+
+# Arrow-key picker: choose "Question" default_index opt1 opt2 ...  -> sets $CHOICE
+choose() {
+  q="$1"; sel="$2"; shift 2; cnt=$#
+  old=$(stty -g)
+  trap 'stty "$old"; printf "\033[?25h"; exit 130' INT
+  stty -echo -icanon min 1 time 0
+  printf '\033[?25l'
+  while :; do
+    printf '\r\033[2K%s ' "$q"
+    i=1
+    for o in "$@"; do
+      if [ "$i" -eq "$sel" ]; then printf "${B}\033[38;5;51m● %s${R}  " "$o"; else printf "${D}○ %s${R}  " "$o"; fi
+      i=$((i + 1))
+    done
+    printf "${D}(←/→, Enter)${R}"
+    k=$(dd bs=1 count=1 2>/dev/null)
+    case "$k" in
+      '') break;;
+      "$(printf '\033')")
+        stty min 0 time 1
+        k2=$(dd bs=1 count=2 2>/dev/null)
+        stty min 1 time 0
+        case "$k2" in
+          '[C'|'[B') sel=$(( sel % cnt + 1 ));;
+          '[D'|'[A') sel=$(( (sel + cnt - 2) % cnt + 1 ));;
+        esac;;
+      l|j|' ') sel=$(( sel % cnt + 1 ));;
+      h|k) sel=$(( (sel + cnt - 2) % cnt + 1 ));;
+    esac
+  done
+  stty "$old"; trap - INT
+  printf '\033[?25h\r\033[2K'
+  i=1; for o in "$@"; do [ "$i" -eq "$sel" ] && CHOICE="$o"; i=$((i + 1)); done
+  printf "%s ${B}%s${R}\n" "$q" "$CHOICE"
+}
+
+if [ -n "$asked" ]; then
+  printf "\n"; banner; printf "\n"
+  printf "Hi, this is the Manager.\nMy deputy and I run on Opus.\n\n"
+  [ -z "$lang" ] && { choose "Language?" 1 English Polski; case "$CHOICE" in Polski) lang=pl;; *) lang=en;; esac; }
+  while :; do
+    printf "How many colleagues? ${D}[2]${R} "; read -r n
+    n="${n:-2}"
+    case "$n" in ''|*[!0-9]*) echo "Enter a number from 1 to 20."; continue;; esac
+    [ "$n" -ge 1 ] && [ "$n" -le 20 ] && break
+    echo "Enter a number from 1 to 20."
+  done
+fi
+
+if [ -z "$model" ]; then
+  choose "Model for the colleagues?" 1 opus sonnet
+  model="$CHOICE"
+fi
+
+case "$lang" in pl) ;; *) lang=en;; esac
+
+open "vscode://tuned.tuned-team/team?n=$n&model=$model&lang=$lang"
+printf "\n${D}Opening windows: manager, deputy and $n colleagues ($model, $lang).${R}\n\n"

@@ -3,3 +3,6 @@
 /roles/
 /roles.bak-*/
 tuned-layout.vsix
+
+# built extension packages, not kept in the repo
+/dist/

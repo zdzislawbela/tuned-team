@@ -3,7 +3,13 @@
 set -e
 cd "$(dirname "$0")"
 CLI="${1:-code}"
-VSIX=$(ls dist/tuned-team-*.vsix | sort | tail -1)
+case "$CLI" in
+  cursor)   EXT_DIR="$HOME/.cursor/extensions";;
+  windsurf) EXT_DIR="$HOME/.windsurf/extensions";;
+  codium)   EXT_DIR="$HOME/.vscode-oss/extensions";;
+  *)        EXT_DIR="$HOME/.vscode/extensions";;
+esac
+VERSION=$(sed -n 's/.*"version": *"\([^"]*\)".*/\1/p' package.json | head -1)
 
 if ! command -v "$CLI" >/dev/null 2>&1; then
   echo "Command '$CLI' not found."
@@ -16,7 +22,16 @@ command -v claude >/dev/null 2>&1 || echo "Warning: no 'claude' command. Install
 # remove those copies so old roles and URLs do not come back.
 "$CLI" --uninstall-extension zbela.tuned-team >/dev/null 2>&1 || true
 "$CLI" --uninstall-extension zbela.tuned-layout >/dev/null 2>&1 || true
-"$CLI" --install-extension "$VSIX" --force
+
+# The extension is linked straight from this folder (no .vsix to build),
+# so `git pull` + "Developer: Reload Window" updates it.
+mkdir -p "$EXT_DIR"
+for old in "$EXT_DIR"/tuned.tuned-team-*; do
+  if [ -L "$old" ]; then rm "$old"; fi
+done
+# Links are gone first, so this removes only a copy installed earlier from a .vsix.
+"$CLI" --uninstall-extension tuned.tuned-team >/dev/null 2>&1 || true
+ln -s "$PWD" "$EXT_DIR/tuned.tuned-team-$VERSION"
 
 # Team helpers (table, reports, READY TO CLEAR, status line) as links in ~/bin,
 # so `git pull` updates them. An existing file of the same name is kept as .bak.
