@@ -220,7 +220,7 @@ Update: `git pull && ./install.sh`. Uninstall: Extensions → Tuned Team → Uni
 
 [tunedparty.com](https://tunedparty.com) is built with Tuned Team: a whole product, not a single ticket. Game rooms in 6 languages, a question bank with thousands of questions, a panel for companies, a radio, help pages and a blog. Several colleagues work on it in parallel every day, each on its own branch, while the owner talks only to the manager.
 
-Tuned Team is not a tool for one Jira task. It replaces a whole team's flow: the manager plans and hands out work, the deputy keeps track of state and releases, colleagues build and test on their own branches, and you decide. For one small fix, a single Claude Code window is enough.
+Tuned Team is not a tool for one Jira task. It replaces a whole team's flow: the manager plans and hands out work, the deputy keeps track of state and releases, colleagues build and test on their own branches, and you decide. Or use it to multiply one developer: several colleagues take independent tasks at once, each on its own branch, so they do not get in each other's way. For one small fix, a single Claude Code window is enough.
 
 ## For the author: a new version
 
