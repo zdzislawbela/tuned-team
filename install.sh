@@ -3,12 +3,6 @@
 set -e
 cd "$(dirname "$0")"
 CLI="${1:-code}"
-case "$CLI" in
-  cursor)   EXT_DIR="$HOME/.cursor/extensions";;
-  windsurf) EXT_DIR="$HOME/.windsurf/extensions";;
-  codium)   EXT_DIR="$HOME/.vscode-oss/extensions";;
-  *)        EXT_DIR="$HOME/.vscode/extensions";;
-esac
 VERSION=$(sed -n 's/.*"version": *"\([^"]*\)".*/\1/p' package.json | head -1)
 
 if ! command -v "$CLI" >/dev/null 2>&1; then
@@ -23,15 +17,36 @@ command -v claude >/dev/null 2>&1 || echo "Warning: no 'claude' command. Install
 "$CLI" --uninstall-extension zbela.tuned-team >/dev/null 2>&1 || true
 "$CLI" --uninstall-extension zbela.tuned-layout >/dev/null 2>&1 || true
 
-# The extension is linked straight from this folder (no .vsix to build),
-# so `git pull` + "Developer: Reload Window" updates it.
-mkdir -p "$EXT_DIR"
-for old in "$EXT_DIR"/tuned.tuned-team-*; do
+# Build the .vsix from this folder (plain zip, no Node or vsce) and install it.
+# Remove links left by 0.1.12's install.sh first, they would clash with the install.
+for old in "$HOME"/.vscode/extensions/tuned.tuned-team-* "$HOME"/.cursor/extensions/tuned.tuned-team-* \
+           "$HOME"/.windsurf/extensions/tuned.tuned-team-* "$HOME"/.vscode-oss/extensions/tuned.tuned-team-*; do
   if [ -L "$old" ]; then rm "$old"; fi
 done
-# Links are gone first, so this removes only a copy installed earlier from a .vsix.
-"$CLI" --uninstall-extension tuned.tuned-team >/dev/null 2>&1 || true
-ln -s "$PWD" "$EXT_DIR/tuned.tuned-team-$VERSION"
+BUILD=$(mktemp -d)
+trap 'rm -rf "$BUILD"' EXIT
+mkdir -p "$BUILD/extension"
+cp -R package.json extension.js colors.json README.md defaults "$BUILD/extension/"
+cat > "$BUILD/[Content_Types].xml" <<'XML'
+<?xml version="1.0" encoding="utf-8"?>
+<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension=".json" ContentType="application/json"/><Default Extension=".js" ContentType="application/javascript"/><Default Extension=".md" ContentType="text/markdown"/><Default Extension=".vsixmanifest" ContentType="text/xml"/></Types>
+XML
+cat > "$BUILD/extension.vsixmanifest" <<XML
+<?xml version="1.0" encoding="utf-8"?>
+<PackageManifest Version="2.0.0" xmlns="http://schemas.microsoft.com/developer/vsx-schema/2011" xmlns:d="http://schemas.microsoft.com/developer/vsx-schema-design/2011">
+  <Metadata>
+    <Identity Language="en-US" Id="tuned-team" Version="$VERSION" Publisher="tuned"/>
+    <DisplayName>Tuned Team</DisplayName>
+    <Description xml:space="preserve">A team of Claude Code agents in one window</Description>
+  </Metadata>
+  <Installation><InstallationTarget Id="Microsoft.VisualStudio.Code"/></Installation>
+  <Dependencies/>
+  <Assets><Asset Type="Microsoft.VisualStudio.Code.Manifest" Path="extension/package.json" Addressable="true"/></Assets>
+</PackageManifest>
+XML
+VSIX="$BUILD/tuned-team-$VERSION.vsix"
+(cd "$BUILD" && zip -qr "$VSIX" "[Content_Types].xml" extension.vsixmanifest extension)
+"$CLI" --install-extension "$VSIX" --force
 
 # Team helpers (table, reports, READY TO CLEAR, status line) as links in ~/bin,
 # so `git pull` updates them. An existing file of the same name is kept as .bak.

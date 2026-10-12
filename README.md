@@ -126,7 +126,7 @@ cd tuned-team
 
 If the script does not find the `code` command: in VS Code press Cmd+Shift+P (Ctrl+Shift+P on Linux) and choose "Shell Command: Install 'code' command in PATH", then restart the terminal.
 
-The script links this folder into the editor's extensions folder (e.g. `~/.vscode/extensions/tuned.tuned-team-<version>`), so keep the folder where it is.
+The script packs the extension from this folder into a `.vsix` (plain `zip`, no Node needed) and installs it. Keep the folder: the helpers in `~/bin` link to it.
 
 After installing, reload the window (Cmd+Shift+P → "Developer: Reload Window").
 
@@ -203,4 +203,4 @@ Update: `git pull && ./install.sh`. Uninstall: Extensions → Tuned Team → Uni
 
 ## For the author: a new version
 
-Bump `version` in `package.json`, commit and push. There is no `.vsix` to build: `install.sh` links the folder, so after `git pull && ./install.sh` and "Developer: Reload Window" everyone has the new version.
+Bump `version` in `package.json`, commit and push. There is no `.vsix` in the repo: `install.sh` builds it on the spot, so after `git pull && ./install.sh` and "Developer: Reload Window" everyone has the new version.
