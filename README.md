@@ -6,6 +6,12 @@ A VS Code extension that opens a team of Claude Code agents in one window. Each 
 - **deputy** watches team state and housekeeping,
 - **#1, #2… colleagues** do the tasks, each on its own branch.
 
+## Built with Tuned Team
+
+[tunedparty.com](https://tunedparty.com) is built with Tuned Team: a whole product, not a single ticket. Game rooms in 6 languages, a question bank with thousands of questions, a panel for companies, a radio, help pages and a blog. Several colleagues work on it in parallel every day, each on its own branch, while the owner talks only to the manager.
+
+Tuned Team is not a tool for one Jira task. It replaces a whole team's flow: the manager plans and hands out work, the deputy keeps track of state and releases, colleagues build and test on their own branches, and you decide. Or use it to multiply one developer: several colleagues take independent tasks at once, each on its own branch, so they do not get in each other's way. For one small fix, a single Claude Code window is enough.
+
 ## How it works
 
 Instead of one window with one agent, you get several at once. You mostly talk to the manager, who hands out the work.
@@ -20,8 +26,6 @@ Instead of one window with one agent, you get several at once. You mostly talk t
 
 - Each cell is a separate terminal running `claude`, started with a window name (`manager`, `deputy`, `2-colleague`; colleagues are numbered from 1) and a role from a Markdown file. Agents know each other by these names and write to each other with `SendMessage`.
 - Each window has its own background colour, so you see at a glance which one you are in. The palette has 15 colours (`colors.json`); beyond that, colours are computed.
-- The manager gets "start" on launch and asks you what we are doing. It passes each task to the deputy, who gives it to a free colleague, briefly, pointing to the rules in `colleague.md`.
-- A colleague works on its own branch and a separate worktree, so it does not overwrite other people's files. It runs the tests before merging.
 - When the team needs more hands, the deputy gives you the command for `Tuned Team: add colleague` (`! open "vscode://tuned.tuned-team/add"`; the sandbox blocks `open` for agents), and a new window appears on the right.
 
 This is how the work flows. Tasks go down, reports come back up:
@@ -70,46 +74,27 @@ It only steers the team's roles (it is added to every window's prompt). It does 
 
 The Claude Code sandbox blocks `git push` (no access to `~/.ssh`) and `open "vscode://…"` for agents. Tuned Team adds no sandbox exceptions for them. The deputy gives you the exact command and you run it with `!` in its window, e.g. `! git push origin master` or `! open "vscode://tuned.tuned-team/add"`.
 
-### Tuned Team and agency-agents: why both
+### Tuned Team and agency-agents
 
-[agency-agents](https://github.com/msitarzewski/agency-agents) is a set of 230+ ready-made specialist descriptions (frontend, security, testing, marketing…). It is knowledge: who such an agent is and how it works. Tuned Team is the organisation of work: who hands out tasks, who stands in for the manager, how many windows run at once.
+[agency-agents](https://github.com/msitarzewski/agency-agents) is a set of ready-made specialist subagents (frontend, security, testing…). Tuned Team organises the work; a colleague can call such a specialist as a subagent, which works in its own context and hands back only a summary. We have not tested this combination yet.
 
-- Tuned Team without agency-agents: colleagues are general agents, with no specialty.
-- Agency-agents without Tuned Team: you call specialists one at a time, in one conversation, with no division of work.
-- Together: the manager gives a colleague a task, and the colleague calls a specialist as a subagent. The subagent works in its own clean context and hands back only a summary, so the colleague's window does not fill up.
+### Team helpers
 
-Installing the specialists: follow the agency-agents instructions, e.g. `./scripts/install.sh --tool claude-code`, which copies files to `~/.claude/agents/`. We have not yet tested this combination in a Tuned Team window. We expect it to work, because these are ordinary Claude Code subagents, but that is an assumption.
+`install.sh` links these into `~/bin` (they need `python3` and `jq`):
 
-### What is in version 0.1.0
-
-- Window layout, tab colours, roles, adding colleagues and labelling tabs with numbers.
-- Roles are plain Markdown files. You can change them (see "Custom roles" below).
-- There are no system pop-ups or sounds. The extension notifies nothing outside the editor window.
-
-### Planned for 0.2.0 (not in the repo yet)
-
-Things that work for the author but have not been moved to this repo yet:
-
-- **Status bar with context percentage.** Up to 29% a plain bar (`repo (main) | Opus | ctx 22%`). From 30% a red percentage with a CONTEXT ALERT note: the agent takes no new tasks and finishes the current one. From 35% it hands its open tasks to a colleague with a clean window.
-- **READY TO CLEAR.** When a colleague has finished, merged its work and handed over its tasks, it runs `tuned-daj-clear`. The bar then shows a clear READY TO CLEAR label. It is the sign that the context can be cleared (`/clear`). The label disappears after clearing.
-- **Reports without messages.** `tuned-meldunek start "~15:00" "what I'm doing"`, `eta`, `gotowe "commit abc123"` write state to a file, so they use no tokens.
-- **Team table** (`tuned-agenci`): laid out like the tree above. Manager and deputy have their own section with their own status (talking, on watch, waiting for you, missing), colleagues are listed below with who is free, who is working, who waits for you, context and ETA.
-
-### Context limit: what it means
-
-An agent "remembers" the conversation in a window of finite size, called the context. The status bar shows how much of it is used (`ctx 31%`). The closer to the limit, the worse the agent works and the more it costs, so after a while the window has to be cleared (`/clear`) and started from scratch. The team does this in order so nothing is lost. The thresholds are the author's settings, not a Claude Code rule.
-
-This is what the bar looks like in successive states (colours are not visible on GitHub; in the editor the percentage is red from 30%):
+- `tuned-agenci deputy`: the team table. Who is free, working, waiting for you, context, ETA, READY TO CLEAR.
+- `tuned-meldunek start "~15:00" "what"`, `eta "~16:00"`, `done "commit abc123"`: a colleague writes its state to a file instead of sending a message, so it costs no tokens.
+- `tuned-daj-clear`: a colleague with nothing open marks itself READY TO CLEAR; you can then type `/clear` in its window.
+- `tuned-statusline.sh` (optional, set it as `statusLine` in `~/.claude/settings.json`): folder, branch, model, context.
 
 ```
 up to 29%  repo (main) | Opus | ctx 22%
-from 30%   repo (main) | Opus | ctx 31% · CONTEXT ALERT     agent takes no new tasks, finishes the current one
-from 35%   repo (main) | Opus | ctx 36% · CONTEXT ALERT     agent hands its tasks to a colleague with a clean window
-done       repo (main) | Opus | ctx 36% · READY TO CLEAR
-           ^ a colleague ran tuned-daj-clear: nothing is open, you can type /clear
+from 30%   repo (main) | Opus | ctx 31% · CONTEXT ALERT     no new tasks, finish the current one
+from 35%   repo (main) | Opus | ctx 36% · CONTEXT ALERT     hand the tasks to a colleague with a clean window
+done       repo (main) | Opus | ctx 36% · READY TO CLEAR    nothing is open, you can /clear
 ```
 
-This is a preview of the planned 0.2.0 look, not a screenshot of the working extension.
+Context is how much of the conversation the agent keeps in its window. The fuller it is, the worse and more expensive the agent works, so the team clears windows in order. The 30% / 35% thresholds are the author's settings, not a Claude Code rule.
 
 ### Recurring tasks (cron)
 
@@ -126,7 +111,7 @@ To avoid asking every time, add it to your own manager role in `~/.tuned-team/ro
 - macOS or Linux (on Windows only through WSL).
 - VS Code 1.90 or newer. It should also work in Cursor, Windsurf and VSCodium, but I have not tested that.
 - [Claude Code](https://claude.com/claude-code) installed (the `claude` command in the terminal) and a signed-in account.
-- `perl` (present on macOS and most Linux systems).
+- `perl` and `python3` (present on macOS and most Linux systems), and `jq` for the helpers.
 
 It will not work in PhpStorm or other JetBrains IDEs.
 
@@ -215,12 +200,6 @@ Change the files there and open the team again. In a role text you can use two p
 ## Updating and uninstalling
 
 Update: `git pull && ./install.sh`. Uninstall: Extensions → Tuned Team → Uninstall. Your own roles in `~/.tuned-team/` stay.
-
-## Built with Tuned Team
-
-[tunedparty.com](https://tunedparty.com) is built with Tuned Team: a whole product, not a single ticket. Game rooms in 6 languages, a question bank with thousands of questions, a panel for companies, a radio, help pages and a blog. Several colleagues work on it in parallel every day, each on its own branch, while the owner talks only to the manager.
-
-Tuned Team is not a tool for one Jira task. It replaces a whole team's flow: the manager plans and hands out work, the deputy keeps track of state and releases, colleagues build and test on their own branches, and you decide. Or use it to multiply one developer: several colleagues take independent tasks at once, each on its own branch, so they do not get in each other's way. For one small fix, a single Claude Code window is enough.
 
 ## For the author: a new version
 
