@@ -20,9 +20,9 @@ Instead of one window with one agent, you get several at once. You mostly talk t
 
 - Each cell is a separate terminal running `claude`, started with a window name (`manager`, `deputy`, `2-colleague`; colleagues are numbered from 1) and a role from a Markdown file. Agents know each other by these names and write to each other with `SendMessage`.
 - Each window has its own background colour, so you see at a glance which one you are in. The palette has 15 colours (`colors.json`); beyond that, colours are computed.
-- The manager gets "start" on launch and asks you what we are doing. It gives tasks to free colleagues, briefly, pointing to the rules in `colleague.md`.
+- The manager gets "start" on launch and asks you what we are doing. It passes each task to the deputy, who gives it to a free colleague, briefly, pointing to the rules in `colleague.md`.
 - A colleague works on its own branch and a separate worktree, so it does not overwrite other people's files. It runs the tests before merging.
-- When the manager needs more hands, it calls `Tuned Team: add colleague` (address `…://tuned.tuned-team/add`), and a new window appears on the right.
+- When the team needs more hands, the deputy gives you the command for `Tuned Team: add colleague` (`! open "vscode://tuned.tuned-team/add"`; the sandbox blocks `open` for agents), and a new window appears on the right.
 
 This is how the work flows. Tasks go down, reports come back up:
 
@@ -34,28 +34,41 @@ This is how the work flows. Tasks go down, reports come back up:
        what you want        answers, questions, "done"
                   ▼          │
                 ┌──────────────┐
-                │   Manager    │   talks to you, hands out tasks
+                │   Manager    │   talks to you, passes tasks on
                 └──────────────┘
                   │          ▲
    team matters + tasks      only what needs you
                   ▼          │
                 ┌──────────────┐
-                │    Deputy    │   release, housekeeping, standing tasks,
+                │    Deputy    │   hands out tasks, release, housekeeping,
                 └──────────────┘   stands in for the manager
                   │          ▲
                 tasks       state: tuned-meldunek (no messages),
-                  ▼          │    messages only for blockers
+                  ▼          │    messages only for blockers and finished work
    ┌───────┐ ┌───────┐ ┌───────┐ ┌───────┐
    │  #1   │ │  #2   │ │  #3   │ │  #4   │   colleagues: the only ones
    └───────┘ └───────┘ └───────┘ └───────┘   who do the work, each on its own branch
 ```
 
 - **Prompter** is you. You talk to the manager only.
-- **Manager** talks to you and gives tasks to free colleagues. It does not do tasks itself, writes no code and creates no branches. Team matters it passes to the deputy.
-- **Deputy** runs the team: release, repository housekeeping, standing tasks, who is free. It does not do product tasks either. When the manager goes down (window closed, context full, no answer), the deputy takes over the conversation with you and says so.
-- **Colleagues (#1, #2…)** are the only ones who do tasks. Each new task starts on the colleague's own branch and worktree. They write their state with `tuned-meldunek` (no tokens) and ask you directly in their own window when they need a decision.
+- **Manager** talks only to you and the deputy. It passes your tasks to the deputy and does not write to colleagues. It does not do tasks itself, writes no code and creates no branches.
+- **Deputy** runs the team: hands tasks to free colleagues, release, repository housekeeping, standing tasks, who is free. Colleagues report only to the deputy; the deputy sends the manager only what you need to see. It does not do product tasks either. When the manager goes down (window closed, context full, no answer), the deputy takes over the conversation with you and says so.
+- **Colleagues (#1, #2…)** are the only ones who do tasks. Each new task starts on the colleague's own branch and worktree. They write their state with `tuned-meldunek` (no tokens), report to the deputy, and ask you in their own window only for permission prompts.
 
 **Why two people on top.** The manager stays free to talk to you while the deputy keeps the team in order in the background.
+
+### Control mode
+
+One setting per project, chosen in the first wizard step and remembered for that folder. Change it with `Tuned Team: control mode`; running windows get the new mode after a restart.
+
+- **I DECIDE ALL** (default, for work projects): release, push, deploy and changes to settings or permissions wait for your "yes", after the team shows you the exact repo, branch and commits. You push yourself: the deputy gives you the exact command.
+- **ALL CLAUDE** (hobby projects): the deputy releases from the base branch on its own, and colleagues do not ask you about each step. Permission prompts and sandbox blocks still come to you.
+
+It only steers the team's roles (it is added to every window's prompt). It does not change Claude Code's permissions or auto mode. No branch is assumed: the team checks the project's base branch (e.g. `master`) instead of assuming `main`.
+
+### What stays manual
+
+The Claude Code sandbox blocks `git push` (no access to `~/.ssh`) and `open "vscode://…"` for agents. Tuned Team adds no sandbox exceptions for them. The deputy gives you the exact command and you run it with `!` in its window, e.g. `! git push origin master` or `! open "vscode://tuned.tuned-team/add"`.
 
 ### Tuned Team and agency-agents: why both
 
@@ -102,7 +115,7 @@ This is a preview of the planned 0.2.0 look, not a screenshot of the working ext
 
 The extension starts nothing in the background on its own. If you want the team to do something regularly (e.g. check for new commits and release every hour), ask the manager in its window, for example:
 
-> Set up a recurring task every hour: write to the deputy "check for new commits on main and release if there are any".
+> Set up a recurring task every hour: write to the deputy "check for new commits on the base branch and release if there are any".
 
 Claude Code has the `/loop` command and a recurring-task tool for this. They usually last only as long as the session: after the window is closed or after `/clear` they are gone and you have to ask again (check the Claude Code docs for how it works in your version).
 
@@ -132,21 +145,32 @@ Without the script: Cmd+Shift+P → "Extensions: Install from VSIX…" and point
 
 After installing, reload the window (Cmd+Shift+P → "Developer: Reload Window").
 
+### Auto mode
+
+In auto mode the Claude Code classifier can block writes to the team's task list `~/bin/.tuned-zlecenia.json` ("Unauthorized Persistence"), even when `Write` is allowed. At the end, `install.sh` runs `./allow-rules.sh`, which shows the exact diff for `~/.claude/settings.json` and changes nothing unless you answer `y`. It adds:
+
+- `permissions.allow`: `Edit(~/bin/.tuned-zlecenia.json)`;
+- `autoMode.allow`: `$defaults` (keeps the built-in exceptions) plus one plain-language exception for the task list.
+
+A backup goes to `settings.json.tuned-bak`. `./allow-rules.sh --dry-run` only shows the diff, and running it again adds only what is missing. Restart open Claude Code windows afterwards. If auto mode still blocks something, the agent asks you in its window instead of working around it.
+
 ## Usage
 
 Open a project folder, then Cmd+Shift+P:
 
 | Command | What it does |
 |---|---|
-| Tuned Team: start | wizard with three questions (model, size of the work, recurring task), then opens the team |
+| Tuned Team: start | wizard with four questions (control mode, model, size of the work, recurring task), then opens the team |
 | Tuned Team: add colleague | adds one more colleague on the right |
 | Tuned Team: label tabs with numbers | gives tabs a name with a number and a colour |
+| Tuned Team: control mode | changes the project's control mode (see "Control mode") |
 
-After "Tuned Team: start" you answer three questions (Esc cancels, nothing opens then):
+After "Tuned Team: start" you answer four questions (Esc cancels, nothing opens then):
 
-1. **Which model?** Opus (recommended, best quality), Sonnet (faster, uses less of your limit) or the Claude Code default. It applies to colleagues; the manager and the deputy always run on Opus.
-2. **How big is the work?** This decides how many colleagues we suggest (table below). You can also type your own number.
-3. **Recurring task?** No, "release every hour", or your own. The manager sets it up right after start. See the "Recurring tasks (cron)" section.
+1. **Who decides?** I DECIDE ALL or ALL CLAUDE, remembered for this project. See "Control mode".
+2. **Which model?** Opus (recommended, best quality), Sonnet (faster, uses less of your limit) or the Claude Code default. It applies to colleagues; the manager and the deputy always run on Opus.
+3. **How big is the work?** This decides how many colleagues we suggest (table below). You can also type your own number.
+4. **Recurring task?** No (default), "release every hour", or your own. The manager sets it up right after start. See the "Recurring tasks (cron)" section.
 
 The manager starts with the message "start" plus your answers and asks what we are doing.
 
