@@ -216,6 +216,16 @@ Change the files there and open the team again. In a role text you can use two p
 
 Update: `git pull && ./install.sh`. Uninstall: Extensions → Tuned Team → Uninstall. Your own roles in `~/.tuned-team/` stay.
 
+## Example: what it took to build tunedparty.com
+
+[tunedparty.com](https://tunedparty.com) is a party game site built with this team setup. State on 2026-10-12:
+
+- about **10B tokens** used so far (as shown by Claude),
+- 17 days of work (from 2026-09-25), about 1700 commits,
+- 33 game rooms, 6 languages, over 5300 questions in the bank.
+
+The token count covers the whole project, not only the team windows. How much of your limit that is depends on your plan.
+
 ## For the author: a new version
 
 ```sh
