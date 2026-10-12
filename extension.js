@@ -13,6 +13,22 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const quote = (s) => `'${String(s).replace(/'/g, "'\\''")}'`;
 
 let extensionPath = "";
+let state; // workspaceState: remembered per project
+
+// Control mode, per project. It only steers the team's roles, not Claude Code's own permissions.
+const CONTROL = {
+  decide: {
+    label: "I DECIDE ALL",
+    description: "work projects: release, push, deploy and settings wait for your yes",
+    text: "Control mode for this project: I DECIDE ALL. Release, push, deploy and changes to settings or permissions wait for a yes from the owner, given after you show the exact repo, branch and commits. The owner pushes by hand: give them the exact command.",
+  },
+  claude: {
+    label: "ALL CLAUDE",
+    description: "hobby projects: the deputy releases on its own, colleagues do not ask about each step",
+    text: "Control mode for this project: ALL CLAUDE. The deputy releases on its own when there are new merged commits on the base branch; colleagues do not ask the owner about each step. Permission prompts and sandbox blocks still go to the owner.",
+  },
+};
+const controlOf = () => (CONTROL[state?.get("control")] ? state.get("control") : "decide");
 
 // A role from ~/.tuned-team/roles takes precedence over the built-in one.
 function roleFile(role) {
@@ -68,7 +84,8 @@ function launchCmd(nr, role, cwd, opts = session) {
   const prompt =
     `"$(TT_ROLES=${quote(roles)} TT_ADD=${quote(addUrl)} ` +
     `perl -pe 's/\\{\\{ROLES\\}\\}/$ENV{TT_ROLES}/g; s/\\{\\{ADD_URL\\}\\}/$ENV{TT_ADD}/g' ${quote(roleFile(role))}; ` +
-    `printf '\\n\\nLanguage: ${opts.lang === "pl" ? "reply to the owner and write to teammates in Polish" : "reply to the owner and write to teammates in English"}.\\n')"`;
+    `printf '\\n\\nLanguage: ${opts.lang === "pl" ? "reply to the owner and write to teammates in Polish" : "reply to the owner and write to teammates in English"}.\\n'; ` +
+    `printf '%s\\n' ${quote(CONTROL[controlOf()].text)})"`;
   const banner = nr === 0 ? `printf '${bannerSeq}'; ` : "";
   return `printf '${tintSeq(nr)}'; ${banner}claude -n ${name}${model}${lean} --append-system-prompt ${prompt}${start}`;
 }
@@ -150,16 +167,31 @@ async function askCount() {
   return answer ? Number(answer) : undefined;
 }
 
-// Wizard: model, size of the work (with a suggested number of colleagues), recurring task.
+// Control mode picker; the current one is listed first. Returns false on Esc.
+async function pickControl(title) {
+  const cur = controlOf();
+  const keys = [cur, ...Object.keys(CONTROL).filter((k) => k !== cur)];
+  const chosen = await pick(title, "Remembered for this project; change it later with 'Tuned Team: control mode'", keys.map((k) => ({
+    label: CONTROL[k].label,
+    description: (k === cur ? "current · " : "") + CONTROL[k].description,
+    value: k,
+  })));
+  if (!chosen) return false;
+  await state.update("control", chosen.value);
+  return true;
+}
+
+// Wizard: control mode, model, size of the work (with a suggested number of colleagues), recurring task.
 async function start() {
-  const model = await pick("Tuned Team (1/3): which model?", "Model for all team windows", [
+  if (!(await pickControl("Tuned Team (1/4): who decides on release, push and deploy?"))) return;
+  const model = await pick("Tuned Team (2/4): which model?", "Model for all team windows", [
     { label: "Opus", description: "recommended: best quality", value: "opus" },
     { label: "Sonnet", description: "faster, uses less of your limit", value: "sonnet" },
     { label: "Default", description: "do not set, stays as in Claude Code", value: "" },
   ]);
   if (!model) return;
 
-  const size = await pick("Tuned Team (2/3): how big is the work?", "This decides how many colleagues we suggest", [
+  const size = await pick("Tuned Team (3/4): how big is the work?", "This decides how many colleagues we suggest", [
     { label: "One feature or fix", description: "we suggest 2 colleagues", value: 2 },
     { label: "A few tasks, half a day", description: "we suggest 4 colleagues", value: 4 },
     { label: "A full day of coding", description: "we suggest 6 colleagues (8 windows, the limit drains faster)", value: 6 },
@@ -169,12 +201,12 @@ async function start() {
   const n = size.value || (await askCount());
   if (!n) return;
 
-  const cron = await pick("Tuned Team (3/3): recurring task?", "The manager sets it up right after start", [
+  const cron = await pick("Tuned Team (4/4): recurring task?", "The manager sets it up right after start", [
     { label: "No", description: "no background tasks", value: "" },
     {
       label: "Yes, release every hour",
       description: "the manager asks the deputy to check new commits and release",
-      value: "every hour write to the deputy: check for new commits on the main branch and release if there are any.",
+      value: "every hour write to the deputy: check for new commits on the base branch and release if there are any.",
     },
     { label: "Custom…", description: "you type what and how often", value: "custom" },
   ]);
@@ -189,6 +221,13 @@ async function start() {
     if (!cronText) return;
   }
   return team(n, { model: model.value, sizeLabel: size.label.toLowerCase(), cron: cronText });
+}
+
+// Change the control mode; windows started or restarted from now on get it.
+async function control() {
+  if (await pickControl("Tuned Team: control mode for this project")) {
+    vscode.window.showInformationMessage(`Tuned Team: ${CONTROL[controlOf()].label}. Running windows get it after a restart; tell the manager now if the team is running.`);
+  }
 }
 
 // One more colleague in a new editor group to the right (the manager calls it).
@@ -244,10 +283,12 @@ async function label() {
 
 exports.activate = (context) => {
   extensionPath = context.extensionPath;
+  state = context.workspaceState;
   context.subscriptions.push(
     vscode.commands.registerCommand("tunedTeam.start", start),
     vscode.commands.registerCommand("tunedTeam.add", add),
     vscode.commands.registerCommand("tunedTeam.label", label),
+    vscode.commands.registerCommand("tunedTeam.control", control),
     // shell shortcut (the scheme depends on the editor: vscode://, cursor://, windsurf://):
     //   open "vscode://tuned.tuned-team/team?n=4"
     //   open "vscode://tuned.tuned-team/add"

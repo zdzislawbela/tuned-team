@@ -29,6 +29,10 @@
       {
         "command": "tunedTeam.label",
         "title": "Tuned Team: label tabs with numbers"
+      },
+      {
+        "command": "tunedTeam.control",
+        "title": "Tuned Team: control mode"
       }
     ]
   }
