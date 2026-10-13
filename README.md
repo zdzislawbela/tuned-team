@@ -159,6 +159,8 @@ After "Tuned Team: start" you answer four questions (Esc cancels, nothing opens 
 
 The manager starts with the message "start" plus your answers and asks what we are doing.
 
+Every window starts like a plain `claude`: slash commands, skills, the project's MCP servers and the claude.ai connectors (e.g. Claude Docs) are all there.
+
 ### How many windows to open
 
 The wizard suggests a number of colleagues by the size of the work. Add the manager and the deputy to get the number of windows.

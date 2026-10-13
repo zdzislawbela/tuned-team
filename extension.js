@@ -75,9 +75,8 @@ function launchCmd(nr, role, cwd, opts = session) {
   // Manager and deputy always run on Opus; the wizard's model applies to colleagues.
   const chosen = nr <= 1 ? "opus" : opts.model;
   const model = chosen ? ` --model ${quote(chosen)}` : "";
-  // Lean start: no skills, no MCP servers. Colleagues keep only the project's own .mcp.json (e.g. the database).
-  const hasMcp = cwd && fs.existsSync(path.join(cwd, ".mcp.json"));
-  const lean = ` --disable-slash-commands --strict-mcp-config${nr >= 2 && hasMcp ? " --mcp-config .mcp.json" : ""}`;
+  // Every window starts like a plain claude: slash commands, skills, the project's MCP servers
+  // and the claude.ai connectors (e.g. Claude Docs). No --strict-mcp-config: it hides the connectors.
   const start = nr === 0 ? ` ${quote(startMessage(opts))}` : "";
   const roles = path.dirname(roleFile("colleague"));
   const addUrl = `${vscode.env.uriScheme}://${EXT_ID}/add`;
@@ -87,7 +86,7 @@ function launchCmd(nr, role, cwd, opts = session) {
     `printf '\\n\\nLanguage: ${opts.lang === "pl" ? "reply to the owner and write to teammates in Polish" : "reply to the owner and write to teammates in English"}.\\n'; ` +
     `printf '%s\\n' ${quote(CONTROL[controlOf()].text)})"`;
   const banner = nr === 0 ? `printf '${bannerSeq}'; ` : "";
-  return `printf '${tintSeq(nr)}'; ${banner}claude -n ${name}${model}${lean} --append-system-prompt ${prompt}${start}`;
+  return `printf '${tintSeq(nr)}'; ${banner}claude -n ${name}${model} --append-system-prompt ${prompt}${start}`;
 }
 
 function member(nr, role, viewColumn, cwd, opts = session) {
