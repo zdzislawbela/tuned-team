@@ -23,7 +23,7 @@ PERMISSIONS = [
     "Edit(~/bin/.tuned-zlecenia.json)",   # task list read by the table (Edit rules also cover Write)
 ]
 AUTO_MODE = [
-    "Tuned Team task list: creating or editing ~/bin/.tuned-zlecenia.json (a JSON list of team tasks shown in the tuned-agenci table) is ordinary team bookkeeping, not persistence.",
+    "Tuned Team task list: creating or editing ~/bin/.tuned-zlecenia.json (a JSON list of team tasks shown in the tuned-agents table) is ordinary team bookkeeping, not persistence.",
 ]
 
 allow = data.setdefault("permissions", {}).setdefault("allow", [])

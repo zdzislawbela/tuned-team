@@ -4,7 +4,7 @@
 # then darker to full red at 30% (time to clear). Counted against the model's real
 # window: Opus = 1M tokens, even if Claude Code reports a smaller one.
 # From 30% context: a CONTEXT ALERT line below (from 35% the agent hands its tasks over);
-# after tuned-daj-clear: a green READY TO CLEAR line, only then /clear.
+# after tuned-ready-to-clear: a green READY TO CLEAR line, only then /clear.
 input=$(cat)
 dir=$(echo "$input" | jq -r '.workspace.current_dir // .cwd')
 model=$(echo "$input" | jq -r '.model.display_name')
@@ -17,7 +17,7 @@ elif [ -n "$tokens" ] && [ -n "$size" ] && [ "$size" -gt 0 ]; then
   used=$((tokens * 100 / size))
 fi
 sid=$(echo "$input" | jq -r '.session_id // empty')
-# tuned-daj-clear: the colleague finished and handed its tasks over, only /clear is left
+# tuned-ready-to-clear: the colleague finished and handed its tasks over, only /clear is left
 ready=""; [ -n "$sid" ] && [ -f "$HOME/.claude/tuned-clear/$sid" ] && ready=1
 branch=$(git -C "$dir" --no-optional-locks branch --show-current 2>/dev/null)
 

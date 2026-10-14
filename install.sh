@@ -49,6 +49,7 @@ VSIX="$BUILD/tuned-team-$VERSION.vsix"
 "$CLI" --install-extension "$VSIX" --force
 
 # Team helpers (table, reports, READY TO CLEAR, status line) as links in ~/bin,
+# with the old Polish names (tuned-agenci, tuned-meldunek, tuned-daj-clear) kept as aliases,
 # so `git pull` updates them. An existing file of the same name is kept as .bak.
 mkdir -p "$HOME/bin"
 for f in bin/*; do
@@ -57,7 +58,7 @@ for f in bin/*; do
   ln -sf "$PWD/$f" "$dst"
 done
 case ":$PATH:" in *":$HOME/bin:"*) ;; *) echo "Add ~/bin to PATH (e.g. in ~/.zshrc: export PATH=\"\$HOME/bin:\$PATH\"), the team calls these helpers by name." ;; esac
-command -v jq >/dev/null 2>&1 || echo "Warning: no 'jq' command. tuned-daj-clear and the status line need it."
+command -v jq >/dev/null 2>&1 || echo "Warning: no 'jq' command. tuned-ready-to-clear and the status line need it."
 grep -q tuned-statusline "$HOME/.claude/settings.json" 2>/dev/null || echo "Optional status line: add to ~/.claude/settings.json: \"statusLine\": {\"type\": \"command\", \"command\": \"~/bin/tuned-statusline.sh\"}"
 
 # Auto mode: a rule for the team's task list. Shows the diff and asks first.

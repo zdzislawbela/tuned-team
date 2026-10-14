@@ -47,7 +47,7 @@ This is how the work flows. Tasks go down, reports come back up:
                 │    Deputy    │   hands out tasks, release, housekeeping,
                 └──────────────┘   stands in for the manager
                   │          ▲
-                tasks       state: tuned-meldunek (no messages),
+                tasks       state: tuned-report (no messages),
                   ▼          │    messages only for blockers and finished work
    ┌───────┐ ┌───────┐ ┌───────┐ ┌───────┐
    │  #1   │ │  #2   │ │  #3   │ │  #4   │   colleagues: the only ones
@@ -57,7 +57,7 @@ This is how the work flows. Tasks go down, reports come back up:
 - **Prompter** is you. You talk to the manager only.
 - **Manager** talks only to you and the deputy. It passes your tasks to the deputy and does not write to colleagues. It does not do tasks itself, writes no code and creates no branches.
 - **Deputy** runs the team: hands tasks to free colleagues, release, repository housekeeping, standing tasks, who is free. Colleagues report only to the deputy; the deputy sends the manager only what you need to see. It does not do product tasks either. When the manager goes down (window closed, context full, no answer), the deputy takes over the conversation with you and says so.
-- **Colleagues (#1, #2…)** are the only ones who do tasks. Each new task starts on the colleague's own branch and worktree. They write their state with `tuned-meldunek` (no tokens), report to the deputy, and ask you in their own window only for permission prompts.
+- **Colleagues (#1, #2…)** are the only ones who do tasks. Each new task starts on the colleague's own branch and worktree. They write their state with `tuned-report` (no tokens), report to the deputy, and ask you in their own window only for permission prompts.
 
 **Why two people on top.** The manager stays free to talk to you while the deputy keeps the team in order in the background.
 
@@ -82,10 +82,12 @@ The Claude Code sandbox blocks `git push` (no access to `~/.ssh`) and `open "vsc
 
 `install.sh` links these into `~/bin` (they need `python3` and `jq`):
 
-- `tuned-agenci deputy`: the team table. Who is free, working, waiting for you, context, ETA, READY TO CLEAR.
-- `tuned-meldunek start "~15:00" "what"`, `eta "~16:00"`, `done "commit abc123"`: a colleague writes its state to a file instead of sending a message, so it costs no tokens.
-- `tuned-daj-clear`: a colleague with nothing open marks itself READY TO CLEAR; you can then type `/clear` in its window.
+- `tuned-agents deputy`: the team table. Who is free, working, waiting for you, context, ETA, READY TO CLEAR.
+- `tuned-report start "~15:00" "what"`, `eta "~16:00"`, `done "commit abc123"`: a colleague writes its state to a file instead of sending a message, so it costs no tokens.
+- `tuned-ready-to-clear`: a colleague with nothing open marks itself READY TO CLEAR; you can then type `/clear` in its window.
 - `tuned-statusline.sh` (optional, set it as `statusLine` in `~/.claude/settings.json`): folder, branch, model, context; also turns the window background red as context fills up.
+
+The old names `tuned-agenci`, `tuned-meldunek` and `tuned-daj-clear` still work as aliases.
 
 ```
 up to 29%  repo (main) | Opus | ctx 22%
