@@ -11,8 +11,6 @@ ACTIVE_S = 300  # agent wrote in the last 5 min = working
 DONE_MARK = 'READY TO CLEAR'
 # Tasks I (the dispatcher session) hand out: {window: {task, at}}; newest wins over the first prompt.
 ORDERS = f'{HOME}/bin/.tuned-zlecenia.json'
-# One colour per member: the same dot here as the window background (colors.json in the repo).
-COLORS = os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), 'colors.json')
 
 
 def alive(pid):
@@ -114,10 +112,6 @@ def main():
         orders = json.load(open(ORDERS))
     except Exception:
         orders = {}
-    try:
-        colors = json.load(open(COLORS))
-    except Exception:
-        colors = {}
     rows = []
     for f in glob.glob(f'{HOME}/.claude/sessions/*.json'):
         try:
@@ -163,7 +157,7 @@ def main():
     label = {'czeka': '⏳ waiting', 'pracuje': '⚙ working', 'bezczynne': '? no report', 'gotowe': '✔ free', 'ja': 'this session'}
 
     def num_of(r):
-        """Colour slot: manager 0, deputy 1, colleague k = k + 1 (legacy windows: the order's nr)."""
+        """Slot: manager 0, deputy 1, colleague k = k + 1 (legacy windows: the order's nr)."""
         o = r['order'] or {}
         if 'nr' in o:
             return str(o['nr'])
@@ -180,9 +174,6 @@ def main():
         m = re.match(r'^(\d+)-', r['name'])
         return str(o['nr']) if 'nr' in o else m.group(1) if m else ''
 
-    def dot_of(num):
-        return (colors.get(num) or [''])[0]
-
     leads = {num_of(r): r for r in rows if num_of(r) in ('0', '1')}
     team = [r for r in rows if num_of(r) not in ('0', '1')]
     nt = {k: sum(1 for r in team if r['kind'] == k) for k in order}
@@ -192,8 +183,8 @@ def main():
     print('Prompter (you)')
     print('  ↓ talk    ↑ answers, questions')
     print()
-    print('| | Who | Role | Ctx | State |')
-    print('|---|---|---|---|---|')
+    print('| Who | Role | Ctx | State |')
+    print('|---|---|---|---|')
     roles = {'0': ('Manager', 'talks to you, passes tasks on'), '1': ('Deputy', 'hands out tasks, release, housekeeping')}
     for num in ('0', '1'):
         r = leads.get(num)
@@ -210,7 +201,7 @@ def main():
                 state = '🧹 READY TO CLEAR'
             elif r['ctx'] >= 300000:
                 state += ' · CONTEXT ALERT'
-        print(f"| {dot_of(num)} | {name} | {role} | {ctx} | {state} |")
+        print(f"| {name} | {role} | {ctx} | {state} |")
     print()
     print('  ↓ tasks    ↑ reports (tuned-meldunek)')
     print()
@@ -233,7 +224,7 @@ def main():
         elif r['ctx'] >= 300000:
             state += " · CONTEXT ALERT"
         num = num_of(r)
-        nr = f"{dot_of(num)} #{shown_nr(r)}".strip() if shown_nr(r) else dot_of(num)
+        nr = f"#{shown_nr(r)}" if shown_nr(r) else ''
         name = o.get('label') or (re.match(r'^(\d+)-(.+)$', r['name']).group(2).replace('-', ' ') if num and re.match(r'^(\d+)-(.+)$', r['name']) else r['name'])
         ctx = f"{round(r['ctx'] / 10000)}%" if r['ctx'] else '–'
         print(f"| {nr} | {short(name, 16)} | {ctx} | {state} | {short(eta, 18) or ('?' if r['kind'] == 'pracuje' else '')} | {short(what, 42)} |")

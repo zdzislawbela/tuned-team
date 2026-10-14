@@ -1,6 +1,6 @@
 # Tuned Team
 
-A VS Code extension that opens a team of Claude Code agents in one window. Each agent has its own terminal, colour and role:
+A VS Code extension that opens a team of Claude Code agents in one window. Each agent has its own terminal and role:
 
 - **manager** talks to you and hands out tasks,
 - **deputy** watches team state and housekeeping,
@@ -25,7 +25,7 @@ Instead of one window with one agent, you get several at once. You mostly talk t
 ```
 
 - Each cell is a separate terminal running `claude`, started with a window name (`manager`, `deputy`, `2-colleague`; colleagues are numbered from 1) and a role from a Markdown file. Agents know each other by these names and write to each other with `SendMessage`.
-- Each window has its own background colour, so you see at a glance which one you are in. The palette has 15 colours (`colors.json`); beyond that, colours are computed.
+- The window's background shows how much context it has used, as a red heatmap: black up to 10%, then redder, full red from 30% (time to clear). Counted against the model's real window (Opus = 1M tokens). The status line `tuned-statusline.sh` sets it, so it needs that status line (see below). The number `#N` in the tab name tells windows apart.
 - When the team needs more hands, the deputy gives you the command for `Tuned Team: add colleague` (`! open "vscode://tuned.tuned-team/add"`; the sandbox blocks `open` for agents), and a new window appears on the right.
 
 This is how the work flows. Tasks go down, reports come back up:
@@ -85,7 +85,7 @@ The Claude Code sandbox blocks `git push` (no access to `~/.ssh`) and `open "vsc
 - `tuned-agenci deputy`: the team table. Who is free, working, waiting for you, context, ETA, READY TO CLEAR.
 - `tuned-meldunek start "~15:00" "what"`, `eta "~16:00"`, `done "commit abc123"`: a colleague writes its state to a file instead of sending a message, so it costs no tokens.
 - `tuned-daj-clear`: a colleague with nothing open marks itself READY TO CLEAR; you can then type `/clear` in its window.
-- `tuned-statusline.sh` (optional, set it as `statusLine` in `~/.claude/settings.json`): folder, branch, model, context.
+- `tuned-statusline.sh` (optional, set it as `statusLine` in `~/.claude/settings.json`): folder, branch, model, context; also turns the window background red as context fills up.
 
 ```
 up to 29%  repo (main) | Opus | ctx 22%
@@ -147,7 +147,7 @@ Open a project folder, then Cmd+Shift+P:
 |---|---|
 | Tuned Team: start | wizard with four questions (control mode, model, size of the work, recurring task), then opens the team |
 | Tuned Team: add colleague | adds one more colleague on the right |
-| Tuned Team: label tabs with numbers | gives tabs a name with a number and a colour |
+| Tuned Team: label tabs with numbers | gives tabs a name with a number |
 | Tuned Team: control mode | changes the project's control mode (see "Control mode") |
 
 After "Tuned Team: start" you answer four questions (Esc cancels, nothing opens then):

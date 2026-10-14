@@ -36,30 +36,10 @@ function roleFile(role) {
   return fs.existsSync(own) ? own : path.join(extensionPath, "defaults", "roles", `${role}.md`);
 }
 
-// Each member has a background colour from colors.json; beyond the palette:
-// golden angle by number. OSC 11 sets the terminal background.
-function tintHex(nr) {
-  try {
-    const c = JSON.parse(fs.readFileSync(path.join(extensionPath, "colors.json"), "utf8"))[nr];
-    if (c) return c[1];
-  } catch {}
-  const h = (nr * 137.5) % 360, s = 0.4, l = 0.12;
-  const f = (n) => {
-    const k = (n + h / 30) % 12;
-    const c = l - s * Math.min(l, 1 - l) * Math.max(-1, Math.min(k - 3, 9 - k, 1));
-    return Math.round(c * 255).toString(16).padStart(2, "0");
-  };
-  return `#${f(0)}${f(8)}${f(4)}`;
-}
-const tintSeq = (nr) => `\\033]11;${tintHex(nr)}\\007`;
-
-const dotOf = (nr) => {
-  try {
-    return JSON.parse(fs.readFileSync(path.join(extensionPath, "colors.json"), "utf8"))[nr]?.[0] || "";
-  } catch {
-    return "";
-  }
-};
+// Every window starts black; from then on the status line (bin/tuned-statusline.sh)
+// turns it red as context fills up. OSC 11 sets the terminal background.
+const BLACK = "#000000";
+const tintSeq = `\\033]11;${BLACK}\\007`;
 
 // Grey banner in the manager's window, printed right before claude starts.
 const BANNER = "TUNED TEAM · READY";
@@ -86,12 +66,12 @@ function launchCmd(nr, role, cwd, opts = session) {
     `printf '\\n\\nLanguage: ${opts.lang === "pl" ? "reply to the owner and write to teammates in Polish" : "reply to the owner and write to teammates in English"}.\\n'; ` +
     `printf '%s\\n' ${quote(CONTROL[controlOf()].text)})"`;
   const banner = nr === 0 ? `printf '${bannerSeq}'; ` : "";
-  return `printf '${tintSeq(nr)}'; ${banner}claude -n ${name}${model} --append-system-prompt ${prompt}${start}`;
+  return `printf '${tintSeq}'; ${banner}claude -n ${name}${model} --append-system-prompt ${prompt}${start}`;
 }
 
 function member(nr, role, viewColumn, cwd, opts = session) {
   const label = nr >= 2 ? `#${nr - 1} ${role}` : role[0].toUpperCase() + role.slice(1);
-  const t = vscode.window.createTerminal({ name: `${dotOf(nr)} ${label}`.trim(), cwd, location: { viewColumn, preserveFocus: true } });
+  const t = vscode.window.createTerminal({ name: label, cwd, location: { viewColumn, preserveFocus: true } });
   t.sendText(launchCmd(nr, role, cwd, opts));
   return t;
 }
@@ -236,7 +216,7 @@ async function add() {
   member(nr, "colleague", vscode.ViewColumn.Beside, cwdOf());
 }
 
-// Label the open Claude tabs "#N label" and tint their background: the terminal's
+// Label the open Claude tabs "#N label": the terminal's
 // shell pid -> its claude child -> ~/.claude/sessions/<pid>.json -> name "N-role".
 async function label() {
   const { execFileSync } = require("child_process");
@@ -261,19 +241,10 @@ async function label() {
       const nr = String(sn === "manager" ? 0 : sn === "deputy" ? 1 : m ? Number(m[1]) + 1 : -1);
       if (nr === "-1") continue;
       const title = m ? `#${m[1]} ${m[2].replace(/-/g, " ")}` : sn[0].toUpperCase() + sn.slice(1);
-      // Background: sequence straight to the claude process's tty, without typing into its prompt.
-      try {
-        const tty = execFileSync("ps", ["-o", "tty=", "-p", pid], { encoding: "utf8" }).trim();
-        if (tty && tty !== "??") fs.writeFileSync(`/dev/${tty}`, `\x1b]11;${tintHex(Number(nr))}\x07`);
-      } catch {}
       // renameWithArg renames the active terminal: focus this one first.
       t.show(false);
       await sleep(150);
-      let dot = "";
-      try {
-        dot = JSON.parse(fs.readFileSync(path.join(extensionPath, "colors.json"), "utf8"))[nr]?.[0] || "";
-      } catch {}
-      await vscode.commands.executeCommand("workbench.action.terminal.renameWithArg", { name: `${dot} ${title}`.trim() });
+      await vscode.commands.executeCommand("workbench.action.terminal.renameWithArg", { name: title });
       await sleep(100);
     }
   }

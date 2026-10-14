@@ -26,7 +26,7 @@ done
 BUILD=$(mktemp -d)
 trap 'rm -rf "$BUILD"' EXIT
 mkdir -p "$BUILD/extension"
-cp -R package.json extension.js colors.json README.md defaults "$BUILD/extension/"
+cp -R package.json extension.js README.md defaults "$BUILD/extension/"
 cat > "$BUILD/[Content_Types].xml" <<'XML'
 <?xml version="1.0" encoding="utf-8"?>
 <Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension=".json" ContentType="application/json"/><Default Extension=".js" ContentType="application/javascript"/><Default Extension=".md" ContentType="text/markdown"/><Default Extension=".vsixmanifest" ContentType="text/xml"/></Types>
