@@ -99,6 +99,7 @@ The Claude Code sandbox blocks `git push` (no access to `~/.ssh`) and `open "vsc
 - `tuned-agents deputy`: the team table. Who is free, working, waiting for you, context, ETA, READY TO CLEAR.
 - `tuned-report start "~15:00" "what"`, `eta "~16:00"`, `done "commit abc123"`: a colleague writes its state to a file instead of sending a message, so it costs no tokens.
 - `tuned-ready-to-clear`: a colleague with nothing open marks itself READY TO CLEAR. The deputy sends the manager those numbers and the manager restarts the windows itself (`open "vscode://tuned.tuned-team/restart?nr=N"`), never one that is still working.
+- `tuned-the-end`: the manager closes the whole team when you ask. It first lists unmerged work (branches not merged into the base branch, worktrees, uncommitted files) and closes nothing until you say yes (`tuned-the-end --force`). Then the manager's window shows THE END while colleagues close one by one, then the deputy; GOOD BYE, and the manager's window closes. It goes through the extension (`vscode://tuned.tuned-team/end`), like a restart.
 - `tuned-statusline.sh` (optional, set it as `statusLine` in `~/.claude/settings.json`): folder, branch, model, context; also turns the window background red as context fills up.
 
 The old names `tuned-agenci`, `tuned-meldunek` and `tuned-daj-clear` still work as aliases.

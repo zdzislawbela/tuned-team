@@ -88,6 +88,46 @@ async function restart(k) {
   t.sendText(launchCmd(nr, "colleague", cwdOf()));
 }
 
+// Does the terminal's shell still have a child (claude)? Same pgrep as label().
+async function busy(t) {
+  const shell = await t.processId;
+  if (!shell) return false;
+  try {
+    return require("child_process").execFileSync("pgrep", ["-P", String(shell)], { encoding: "utf8" }).trim() !== "";
+  } catch {
+    return false;
+  }
+}
+
+// The end: close the whole team. The manager runs `tuned-the-end`, which checks for
+// unmerged work and then opens this URI. The manager's claude exits and its window shows
+// THE END while colleagues close one by one, then the deputy; GOOD BYE, and it closes too.
+async function end() {
+  const STEP = 1500;
+  const all = vscode.window.terminals;
+  const manager = all.find((x) => x.name === "Manager");
+  const others = [...all.filter((x) => /^#\d+ colleague/.test(x.name)), ...all.filter((x) => x.name === "Deputy")];
+  let show = false;
+  if (manager) {
+    // Let the manager finish its last reply, then exit its claude. The animation command goes
+    // in only once claude is gone, so it never lands in claude's prompt.
+    await sleep(4000);
+    manager.sendText("/exit");
+    for (let i = 0; i < 20 && (await busy(manager)); i++) await sleep(500);
+    show = !(await busy(manager));
+    if (show) manager.sendText(`"$HOME/bin/tuned-the-end" --show ${Math.ceil((others.length * STEP) / 1000) + 1}; exit`);
+  }
+  for (const t of others) {
+    t.sendText("/exit");
+    await sleep(STEP);
+    t.dispose();
+  }
+  if (manager) {
+    await sleep(show ? 4000 : 0);
+    manager.dispose();
+  }
+}
+
 // Settings from the wizard; "add colleague" in the same editor window uses them too.
 let session = {};
 
@@ -262,11 +302,13 @@ exports.activate = (context) => {
     // shell shortcut (the scheme depends on the editor: vscode://, cursor://, windsurf://):
     //   open "vscode://tuned.tuned-team/team?n=4"
     //   open "vscode://tuned.tuned-team/add"
+    //   open "vscode://tuned.tuned-team/end"   (via tuned-the-end, which checks for unmerged work first)
     vscode.window.registerUriHandler({
       handleUri: (uri) => {
         if (uri.path === "/add") return add();
         if (uri.path === "/restart") return restart(Number(new URLSearchParams(uri.query).get("nr")));
         if (uri.path === "/label") return label();
+        if (uri.path === "/end") return end();
         const q = new URLSearchParams(uri.query);
         const model = ["opus", "sonnet"].includes(q.get("model")) ? q.get("model") : "";
         const lang = q.get("lang") === "pl" ? "pl" : "en";
