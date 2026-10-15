@@ -77,7 +77,7 @@ function member(nr, role, viewColumn, cwd, opts = session) {
 }
 
 // Cull: exit a colleague's claude and start it fresh in the same terminal.
-// Only for colleagues; the deputy calls it when the team table shows READY TO CLEAR for that colleague.
+// Only for colleagues; the manager calls it for colleagues the deputy lists as READY TO CLEAR.
 async function restart(k) {
   if (!(k >= 1)) return vscode.window.showErrorMessage("Tuned Team: only colleagues (#1 and up) can be restarted.");
   const nr = k + 1;

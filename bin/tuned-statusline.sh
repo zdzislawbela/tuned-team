@@ -51,9 +51,9 @@ if [ "$pct" -lt 30 ] && [ -z "$ready" ]; then
 fi
 echo "$out | $(printf '\033[1;31mctx %s%%\033[0m' "$pct")"
 
-# one line below the bar: CONTEXT ALERT (do not clear yet) or READY TO CLEAR (you can /clear)
+# one line below the bar: CONTEXT ALERT (do not clear yet) or READY TO CLEAR (the manager restarts the window)
 if [ -n "$ready" ]; then
-  printf '\033[1;30;42m READY TO CLEAR \033[0m nothing is open, type /clear\n'
+  printf '\033[1;30;42m READY TO CLEAR \033[0m nothing is open, the manager restarts this window\n'
 else
   printf '\033[1;30;47m CONTEXT ALERT \033[0m take no new tasks, finish the current one; from 35%% hand them to the deputy\n'
 fi

@@ -72,7 +72,7 @@ It only steers the team's roles (it is added to every window's prompt). It does 
 
 ### What stays manual
 
-The Claude Code sandbox blocks `git push` (no access to `~/.ssh`) and `open "vscode://…"` for agents. Tuned Team adds no sandbox exceptions for them. The deputy gives you the exact command and you run it with `!` in its window, e.g. `! git push origin master` or `! open "vscode://tuned.tuned-team/add"`.
+The Claude Code sandbox blocks `git push` (no access to `~/.ssh`) and `open "vscode://…"` for agents. Tuned Team adds no sandbox exceptions for them. The deputy gives you the exact command and you run it with `!` in its window, e.g. `! git push origin master` or `! open "vscode://tuned.tuned-team/add"`. Clearing windows is not on this list: the manager restarts READY TO CLEAR colleagues itself.
 
 ### Tuned Team and agency-agents
 
@@ -84,7 +84,7 @@ The Claude Code sandbox blocks `git push` (no access to `~/.ssh`) and `open "vsc
 
 - `tuned-agents deputy`: the team table. Who is free, working, waiting for you, context, ETA, READY TO CLEAR.
 - `tuned-report start "~15:00" "what"`, `eta "~16:00"`, `done "commit abc123"`: a colleague writes its state to a file instead of sending a message, so it costs no tokens.
-- `tuned-ready-to-clear`: a colleague with nothing open marks itself READY TO CLEAR; you can then type `/clear` in its window.
+- `tuned-ready-to-clear`: a colleague with nothing open marks itself READY TO CLEAR. The deputy sends the manager those numbers and the manager restarts the windows itself (`open "vscode://tuned.tuned-team/restart?nr=N"`), never one that is still working.
 - `tuned-statusline.sh` (optional, set it as `statusLine` in `~/.claude/settings.json`): folder, branch, model, context; also turns the window background red as context fills up.
 
 The old names `tuned-agenci`, `tuned-meldunek` and `tuned-daj-clear` still work as aliases.
@@ -93,7 +93,7 @@ The old names `tuned-agenci`, `tuned-meldunek` and `tuned-daj-clear` still work 
 up to 29%  repo (main) | Opus | ctx 22%
 from 30%   repo (main) | Opus | ctx 31% · CONTEXT ALERT     no new tasks, finish the current one
 from 35%   repo (main) | Opus | ctx 36% · CONTEXT ALERT     hand the tasks to a colleague with a clean window
-done       repo (main) | Opus | ctx 36% · READY TO CLEAR    nothing is open, you can /clear
+done       repo (main) | Opus | ctx 36% · READY TO CLEAR    nothing is open, the manager restarts it
 ```
 
 Context is how much of the conversation the agent keeps in its window. The fuller it is, the worse and more expensive the agent works, so the team clears windows in order. The 30% / 35% thresholds are the author's settings, not a Claude Code rule.
