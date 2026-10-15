@@ -61,6 +61,20 @@ This is how the work flows. Tasks go down, reports come back up:
 
 **Why two people on top.** The manager stays free to talk to you while the deputy keeps the team in order in the background.
 
+### Team rules
+
+The built-in roles carry these rules, so every project gets them:
+
+- **Who talks to whom.** You talk to the manager. The manager talks to you and the deputy, the deputy to the manager and colleagues, colleagues only to the deputy. Nobody skips a level. In a colleague's window you only approve permission prompts.
+- **Handing out tasks.** The manager passes your task to the deputy in 2–4 sentences; the deputy gives it to a free colleague (same topic → the same colleague, new topic → a clean window). Nobody adds tasks you did not ask for; extras are offered to you in one line.
+- **1 branch = 1 feature.** One task per branch and worktree, squashed to one commit, no two open tasks on the same files.
+- **Check gate.** Before a merge the colleague runs the project's full check (types, lint, tests). Red means no merge: fix it on the branch. A risky change the automatic tests do not cover (e.g. one that talks to a real AI) gets one live run before it counts as done.
+- **Merge to the local base branch.** Green work goes straight into the local base branch, nothing parked waiting for a look; you test there. Pushing and releasing follow the control mode below.
+- **Release freeze.** Before a release the deputy names a freeze time. After it nothing new is merged; unfinished work goes to the project's todo with a description, branch and state.
+- **Clearing windows.** A colleague starts each task in a clean window: after its merge it marks itself READY TO CLEAR, the deputy sends the manager those numbers, and the manager restarts the windows itself. The mark can be stale, so the manager first checks the window is really idle. You never type `/clear` or a restart command for the team. At about 30% context a colleague stops and hands its state to a fresh window. The deputy clears at about 10%, the manager at about 20%, each after a handover message, never both at once.
+- **Decisions as cards.** A decision for you comes as a card in a shared page or artifact: context, options with trade-offs, a recommendation and a way to pick. Never a one-liner in chat. If you say "decide yourselves" for a task, the team does not ask: colleagues decide small details, the manager or deputy bigger ones, and the manager tells you what was decided.
+- **Short reports.** Colleagues write state with `tuned-report` (no tokens) and send a message only when action is needed: a blocker, finished work (branch and commit), a handover or a decision. The deputy reads no diffs or big files; a colleague or a subagent checks and answers in one sentence.
+
 ### Control mode
 
 One setting per project, chosen in the first wizard step and remembered for that folder. Change it with `Tuned Team: control mode`; running windows get the new mode after a restart.
@@ -104,7 +118,7 @@ The extension starts nothing in the background on its own. If you want the team 
 
 > Set up a recurring task every hour: write to the deputy "check for new commits on the base branch and release if there are any".
 
-Claude Code has the `/loop` command and a recurring-task tool for this. They usually last only as long as the session: after the window is closed or after `/clear` they are gone and you have to ask again (check the Claude Code docs for how it works in your version).
+Claude Code has the `/loop` command and a recurring-task tool for this. They usually last only as long as the session: after the window is closed or after `/clear` they are gone and you have to ask again. Give each one an end date; after it the manager removes the task (check the Claude Code docs for how it works in your version).
 
 To avoid asking every time, add it to your own manager role in `~/.tuned-team/roles/manager.md`, under "On start", e.g. "set up a recurring task every hour: …". The manager will do it at every team start. The built-in manager role sets no recurring tasks.
 
