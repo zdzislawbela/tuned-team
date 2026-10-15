@@ -129,3 +129,18 @@ extension.js`, uruchamiane przez `install.sh` przed budową .vsix.
 Wdrażanie: każdy punkt na własnym branchu, wydanie wtyczki (nowa wersja
 .vsix) tylko po zgodzie właściciela i przy restarcie zespołu, nie w trakcie
 pracy okien.
+
+## Stan po pierwszej partii (2026-10-15 wieczór)
+
+- Pkt 5 (filtr repo w `tuned-agents`): scalone na lokalny main (8a3d021),
+  działa na żywo (link `~/bin/tuned-agents`).
+- Pkt 2 (`team.md`): gotowe na branchu `feat/team-md` (5a60b52), zrobione
+  od nowa z ról 0.1.18 (stary `team-rules-in-plugin` zgubiłby nowsze
+  zasady, do usunięcia razem z resztą branchy). Nie scalone: zmienia
+  `extension.js`, a na main leży niezacommitowana zmiana „Standby”
+  (czeka na decyzję właściciela, czyja jest). Działa dopiero po nowym
+  .vsix i instalacji (za „tak” właściciela).
+- Kolizja: `feat/tuned-team-next` dopisuje linie do `deputy.md` i
+  `manager.md`, z których `feat/team-md` usuwa powtórzone zasady. Kto
+  scala drugi, rozwiązuje konflikt ręcznie: nowe linie zostają w roli,
+  zasady wspólne tylko w `team.md`.
