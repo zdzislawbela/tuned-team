@@ -55,6 +55,8 @@ function launchCmd(nr, role, cwd, opts = session) {
   // Manager and deputy always run on Opus; the wizard's model applies to colleagues.
   const chosen = nr <= 1 ? "opus" : opts.model;
   const model = chosen ? ` --model ${quote(chosen)}` : "";
+  // Every window starts in auto mode.
+  const mode = " --permission-mode auto";
   // Every window starts like a plain claude: slash commands, skills, the project's MCP servers
   // and the claude.ai connectors (e.g. Claude Docs). No --strict-mcp-config: it hides the connectors.
   const start = nr === 0 ? ` ${quote(startMessage(opts))}` : "";
@@ -66,12 +68,13 @@ function launchCmd(nr, role, cwd, opts = session) {
     `printf '\\n\\nLanguage: ${opts.lang === "pl" ? "reply to the owner and write to teammates in Polish" : "reply to the owner and write to teammates in English"}.\\n'; ` +
     `printf '%s\\n' ${quote(CONTROL[controlOf()].text)})"`;
   const banner = nr === 0 ? `printf '${bannerSeq}'; ` : "";
-  return `printf '${tintSeq}'; ${banner}claude -n ${name}${model} --append-system-prompt ${prompt}${start}`;
+  return `printf '${tintSeq}'; ${banner}claude -n ${name}${model}${mode} --append-system-prompt ${prompt}${start}`;
 }
 
-function member(nr, role, viewColumn, cwd, opts = session) {
+// location: an editor group ({ viewColumn }), the panel, or a split ({ parentTerminal }).
+function member(nr, role, location, cwd, opts = session) {
   const label = nr >= 2 ? `#${nr - 1} ${role}` : role[0].toUpperCase() + role.slice(1);
-  const t = vscode.window.createTerminal({ name: label, cwd, location: { viewColumn, preserveFocus: true } });
+  const t = vscode.window.createTerminal({ name: label, cwd, location });
   t.sendText(launchCmd(nr, role, cwd, opts));
   return t;
 }
@@ -153,21 +156,32 @@ function supported() {
   return true;
 }
 
-async function team(n, opts = {}) {
+// Layout: colleagues in a grid of editor groups (2 rows), the bottom panel split into
+// manager | deputy | a fresh shell. The shell that ran tuned-team (shellPid) is closed:
+// the API only splits to the right, so a new shell takes its place at the end.
+async function team(n, opts = {}, shellPid) {
   if (!supported()) return;
   session = { ...opts, n };
   const cwd = cwdOf();
-  const total = n + 2;
-  const cols = Math.ceil(total / ROWS);
+  const rows = Math.min(ROWS, n);
+  const cols = Math.ceil(n / rows);
   await vscode.commands.executeCommand("vscode.setEditorLayout", {
     orientation: 1,
-    groups: Array.from({ length: ROWS }, () => ({ groups: Array.from({ length: cols }, () => ({})) })),
+    groups: Array.from({ length: rows }, () => ({ groups: Array.from({ length: cols }, () => ({})) })),
   });
-  // Manager last: its "READY" banner appears once the rest is up.
-  for (const nr of [...Array.from({ length: total - 1 }, (_, i) => i + 1), 0]) {
-    member(nr, nr === 0 ? "manager" : nr === 1 ? "deputy" : "colleague", nr + 1, cwd);
+  for (let k = 1; k <= n; k++) {
+    member(k + 1, "colleague", { viewColumn: k, preserveFocus: true }, cwd);
     await sleep(200);
   }
+  const old = [];
+  for (const t of vscode.window.terminals) if (shellPid && (await t.processId) === shellPid) old.push(t);
+  const manager = member(0, "manager", vscode.TerminalLocation.Panel, cwd);
+  await sleep(200);
+  const deputy = member(1, "deputy", { parentTerminal: manager }, cwd);
+  await sleep(200);
+  vscode.window.createTerminal({ cwd, location: { parentTerminal: deputy } });
+  old.forEach((t) => t.dispose());
+  manager.show(false);
 }
 
 const pick = async (title, placeHolder, items) => {
@@ -253,7 +267,7 @@ async function control() {
 async function add() {
   if (!supported()) return;
   const nr = Math.max(1, ...taken()) + 1;
-  member(nr, "colleague", vscode.ViewColumn.Beside, cwdOf());
+  member(nr, "colleague", { viewColumn: vscode.ViewColumn.Beside, preserveFocus: true }, cwdOf());
 }
 
 // Label the open Claude tabs "#N label": the terminal's
@@ -312,7 +326,7 @@ exports.activate = (context) => {
         const q = new URLSearchParams(uri.query);
         const model = ["opus", "sonnet"].includes(q.get("model")) ? q.get("model") : "";
         const lang = q.get("lang") === "pl" ? "pl" : "en";
-        return team(Math.max(1, Math.min(20, Number(q.get("n")) || 2)), { model, lang });
+        return team(Math.max(1, Math.min(20, Number(q.get("n")) || 2)), { model, lang }, Number(q.get("pid")) || 0);
       },
     }),
   );

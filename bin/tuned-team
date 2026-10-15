@@ -3,29 +3,74 @@
 # Usage:  tuned-team                 (asks)
 #         tuned-team 4 sonnet [pl]   (no questions; language defaults to en)
 R='\033[0m'; D='\033[2m'; B='\033[1m'
+DOCS="https://github.com/zdzislawbela/tuned-team#readme"
 
 n="$1"; model="$2"; lang="$3"
 asked=""; [ -z "$n" ] && asked=1
 
-# Banner: letters flash through the team colours, then settle on grey.
+# Banner: "tuned.team" in small letters, lighting up one by one. Quiet, no background.
 banner() {
-  txt="T U N E D   T E A M"
+  txt="tuned.team"
   if [ -t 1 ]; then
-    pal="196 208 220 46 51 33 129 201"
-    f=0
-    while [ "$f" -lt 24 ]; do
-      printf '\r  '; i=0
-      for ch in T U N E D '' T E A M; do
-        [ -z "$ch" ] && { printf '   '; continue; }
-        c=$(echo "$pal" | cut -d' ' -f$(( (i + f) % 8 + 1 )))
-        printf "\033[48;5;${c}m\033[38;5;16m\033[1m %s \033[0m" "$ch"
-        i=$((i + 1))
-      done
-      sleep 0.05; f=$((f + 1))
+    i=1
+    while [ "$i" -le ${#txt} ]; do
+      printf '\r  \033[38;5;252m%s\033[38;5;240m%s' "$(echo "$txt" | cut -c1-$((i - 1)))" "$(echo "$txt" | cut -c$i)"
+      sleep 0.07
+      i=$((i + 1))
     done
-    printf '\r\033[2K'
   fi
-  printf "\033[48;5;240m\033[38;5;255m\033[1m  %s  ${R}\n" "$txt"
+  printf "\r\033[2K  ${B}\033[38;5;255m%s${R}\n" "$txt"
+}
+
+# Greeting with the day and date, in the chosen language.
+greet() {
+  d=$(date +%d.%m); u=$(date +%u)
+  if [ "$lang" = pl ]; then
+    day=$(echo "poniedziałek wtorek środa czwartek piątek sobota niedziela" | cut -d' ' -f"$u")
+    printf "  Witamy, jest %s %s. Zaczynamy.\n" "$day" "$d"
+    printf "  ${D}Tu rozmawiamy po ludzku: napisz managerowi, co chcesz dziś zrobić, resztą zajmie się zespół.${R}\n"
+  else
+    printf "  Welcome, it's %s %s. Let's start.\n" "$(date +%A)" "$d"
+    printf "  ${D}No jargon needed here: tell the manager what you want to get done today, the team takes it from there.${R}\n"
+  fi
+}
+
+# Stepper: "✓ done ── ● current ── ○ next   2/3". Steps are the questions still to ask.
+STEPS=""
+stepper() {
+  cur="$1"; i=1; total=$(echo $STEPS | wc -w | tr -d ' ')
+  printf '\n  '
+  for s in $STEPS; do
+    [ "$i" -gt 1 ] && printf "${D} ── ${R}"
+    if [ "$i" -lt "$cur" ]; then printf "\033[38;5;46m✓ %s${R}" "$s"
+    elif [ "$i" -eq "$cur" ]; then printf "${B}\033[38;5;51m● %s${R}" "$s"
+    else printf "${D}○ %s${R}" "$s"; fi
+    i=$((i + 1))
+  done
+  printf "   ${D}step %s/%s${R}\n\n" "$cur" "$total"
+}
+
+# Layout preview: colleagues in 2 rows on top, manager | deputy | shell in the bottom panel.
+block() { printf "\033[48;5;%sm\033[38;5;255m\033[1m%-*s${R}" "$1" "$2" " $3"; }
+layout() {
+  n="$1"; rows=2; [ "$n" -lt 2 ] && rows=1
+  cols=$(( (n + rows - 1) / rows )); w=$(( cols * 7 - 1 )); [ "$w" -lt 32 ] && w=32
+  cw=$(( (w + 1) / cols - 1 ))
+  r=0
+  while [ "$r" -lt "$rows" ]; do
+    printf '  '; c=1
+    while [ "$c" -le "$cols" ]; do
+      k=$(( r * cols + c ))
+      if [ "$k" -le "$n" ]; then block 238 "$cw" "#$k"; else printf "%-*s" "$cw" ""; fi
+      [ "$c" -lt "$cols" ] && printf ' '
+      c=$((c + 1))
+    done
+    [ "$r" -eq 0 ] && printf "  ${D}colleagues${R}"
+    printf '\n'; r=$((r + 1))
+  done
+  pw=$(( (w - 2) / 3 ))
+  printf '  '; block 25 "$pw" manager; printf ' '; block 91 "$pw" deputy; printf ' '; block 240 $(( w - 2 - 2 * pw )) shell
+  printf "  ${D}bottom panel${R}\n"
 }
 
 # Arrow-key picker: choose "Question" default_index opt1 opt2 ...  -> sets $CHOICE
@@ -64,10 +109,21 @@ choose() {
   printf "%s ${B}%s${R}\n" "$q" "$CHOICE"
 }
 
+[ -n "$asked" ] && [ -z "$lang" ] && STEPS="Language"
+[ -n "$asked" ] && STEPS="$STEPS Colleagues"
+[ -z "$model" ] && STEPS="$STEPS Model"
+step=0
+
 if [ -n "$asked" ]; then
   printf "\n"; banner; printf "\n"
-  printf "Hi, this is the Manager.\nMy deputy and I run on Opus.\n\n"
-  [ -z "$lang" ] && { choose "Language?" 1 English Polski; case "$CHOICE" in Polski) lang=pl;; *) lang=en;; esac; }
+  printf "Hi, this is the Manager. My deputy and I run on Opus.\n"
+  printf "A few questions, then VS Code opens your team in this window:\n"
+  printf "  ${D}·${R} colleagues on top, manager | deputy | a new shell in the bottom panel\n"
+  printf "  ${D}·${R} you talk only to the manager; every window runs in auto mode\n"
+  printf "  ${D}·${R} this terminal closes, the new shell takes its place\n"
+  printf "  ${D}·${R} how it works: ${B}%s${R}\n" "$DOCS"
+  [ -z "$lang" ] && { step=$((step + 1)); stepper $step; choose "Language?" 1 English Polski; case "$CHOICE" in Polski) lang=pl;; *) lang=en;; esac; }
+  step=$((step + 1)); stepper $step
   while :; do
     printf "How many colleagues? ${D}[2]${R} "; read -r n
     n="${n:-2}"
@@ -78,11 +134,15 @@ if [ -n "$asked" ]; then
 fi
 
 if [ -z "$model" ]; then
+  step=$((step + 1)); [ -n "$STEPS" ] && stepper $step
   choose "Model for the colleagues?" 1 opus sonnet
   model="$CHOICE"
 fi
 
 case "$lang" in pl) ;; *) lang=en;; esac
 
-open "vscode://tuned.tuned-team/team?n=$n&model=$model&lang=$lang"
-printf "\n${D}Opening windows: manager, deputy and $n colleagues ($model, $lang).${R}\n\n"
+printf "\n"; layout "$n"
+printf "\n"; greet
+printf "\n${D}Opening windows: manager, deputy and $n colleagues ($model, $lang). Docs: $DOCS${R}\n\n"
+# $PPID is this terminal's shell: the extension closes it once the new panel is up.
+open "vscode://tuned.tuned-team/team?n=$n&model=$model&lang=$lang&pid=$PPID"
