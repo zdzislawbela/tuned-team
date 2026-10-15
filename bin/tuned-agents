@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 """Team table: who waits for you, who is working (and how many background
 agents it runs), who is free. Reads ~/.claude/sessions and the transcripts,
-changes nothing. Usage: tuned-agents [my window name, e.g. deputy]"""
-import glob, json, os, re, sys, time
+changes nothing. Shows only sessions of the repo you run it from (worktrees
+included); --all shows every repo.
+Usage: tuned-agents [--all] [my window name, e.g. deputy]"""
+import glob, json, os, re, subprocess, sys, time
 
 HOME = os.path.expanduser('~')
 PROJECTS = f'{HOME}/.claude/projects'
@@ -22,6 +24,21 @@ def alive(pid):
         return True
     except Exception:
         return False
+
+
+_repos = {}
+
+
+def repo_of(cwd):
+    """The repo a folder belongs to: its main checkout, the same for every worktree; None outside git."""
+    if cwd not in _repos:
+        try:
+            out = subprocess.run(['git', '-C', cwd, 'rev-parse', '--path-format=absolute', '--git-common-dir'],
+                                 capture_output=True, text=True, timeout=5).stdout.strip()
+            _repos[cwd] = os.path.dirname(os.path.realpath(out)) if out else None
+        except Exception:
+            _repos[cwd] = None
+    return _repos[cwd]
 
 
 def lead_of(name):
@@ -107,7 +124,10 @@ def label_of(name, order):
 
 
 def main():
-    me = sys.argv[1] if len(sys.argv) > 1 else ''
+    args = [a for a in sys.argv[1:] if a != '--all']
+    me = args[0] if args else ''
+    # Outside a git repo there is nothing to filter by: show everything.
+    team_repo = None if '--all' in sys.argv[1:] else repo_of(os.getcwd())
     try:
         orders = json.load(open(ORDERS))
     except Exception:
@@ -119,6 +139,8 @@ def main():
         except Exception:
             continue
         if not alive(d.get('pid', 0)):
+            continue
+        if team_repo and repo_of(d.get('cwd', '')) != team_repo:
             continue
         sid = d['sessionId']
         first, last, pending, ctx = transcript(sid)
